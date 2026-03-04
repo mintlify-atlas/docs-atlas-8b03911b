@@ -1,0 +1,672 @@
+---
+title: Troubleshooting
+description: Diagnose and fix common issues with Happy CLI using the doctor command and other debugging tools
+---
+
+# Troubleshooting
+
+This guide helps you diagnose and resolve common issues with Happy CLI. The `happy doctor` command is your first stop for automated diagnostics.
+
+## Doctor Command
+
+The doctor command provides comprehensive system diagnostics:
+
+```bash
+happy doctor
+```
+
+This displays:
+- Happy CLI version and platform info
+- Configuration and environment variables
+- Authentication status
+- Daemon status and process list
+- Recent log files
+- Support links
+
+### Doctor Output
+
+Example output:
+
+```
+🩺 Happy CLI Doctor
+
+📋 Basic Information
+Happy CLI Version: 1.0.0
+Platform: darwin arm64
+Node.js Version: v20.11.0
+
+⚙️  Configuration
+Happy Home: /Users/john/.happy
+Server URL: https://api.happy-servers.com
+Logs Dir: /Users/john/.happy/logs
+
+🌍 Environment Variables
+HAPPY_HOME_DIR: not set
+HAPPY_SERVER_URL: not set
+DEBUG: not set
+NODE_ENV: not set
+
+🔐 Authentication
+✓ Authenticated (credentials found)
+
+🤖 Daemon Status
+✓ Daemon is running
+  PID: 12345
+  Started: 3/4/2026, 2:30:45 PM
+  CLI Version: 1.0.0
+  HTTP Port: 50097
+
+🔍 All Happy CLI Processes
+
+📍 Current Process:
+  PID 12399: /usr/local/bin/node .../dist/index.mjs doctor
+
+🤖 Daemon:
+  PID 12345: /usr/local/bin/node .../dist/index.mjs daemon start-sync
+
+🔗 Daemon-Spawned Sessions:
+  PID 12350: /usr/local/bin/node .../dist/index.mjs --started-by daemon
+
+📝 Log Files
+
+Recent Logs:
+  2026-03-04-14-35-22.log - 3/4/2026, 2:35:22 PM
+    /Users/john/.happy/logs/2026-03-04-14-35-22.log
+
+Daemon Logs:
+  2026-03-04-14-30-45-daemon.log - 3/4/2026, 2:30:45 PM
+    /Users/john/.happy/logs/2026-03-04-14-30-45-daemon.log
+
+🐛 Support & Bug Reports
+Report issues: https://github.com/slopus/happy-cli/issues
+Documentation: https://happy.engineering/
+
+✅ Doctor diagnosis complete!
+```
+
+### Daemon-Only Diagnostics
+
+Focus on daemon-related issues:
+
+```bash
+happy daemon status
+```
+
+Shows only daemon status and process information.
+
+## Common Issues
+
+### Authentication Problems
+
+<Accordion title="Error: Not authenticated">
+  **Symptoms**: `Error: Not authenticated` when running `happy`
+  
+  **Diagnosis**:
+  ```bash
+  happy auth status
+  ```
+  
+  **Solution**:
+  ```bash
+  happy auth login
+  ```
+  
+  If already authenticated but still seeing errors:
+  ```bash
+  happy auth login --force
+  ```
+</Accordion>
+
+<Accordion title="Authentication hangs at 'Waiting for authentication'">
+  **Symptoms**: CLI stuck polling for authentication
+  
+  **Causes**:
+  - Mobile app not responding to QR code
+  - Network connectivity issues
+  - Server timeout
+  
+  **Solution**:
+  1. Press `Ctrl+C` to cancel
+  2. Check network connection:
+     ```bash
+     ping api.happy-servers.com
+     ```
+  3. Try web authentication instead of mobile
+  4. Check firewall/proxy settings
+</Accordion>
+
+<Accordion title="QR code not displaying correctly">
+  **Symptoms**: Garbled QR code in terminal
+  
+  **Causes**:
+  - Terminal doesn't support unicode
+  - Font size too small
+  - Color scheme interference
+  
+  **Solution**:
+  1. Increase terminal font size
+  2. Use manual URL shown below QR code
+  3. Switch to web authentication
+  4. Try a different terminal emulator
+</Accordion>
+
+### Daemon Issues
+
+<Accordion title="Daemon won't start">
+  **Symptoms**: `Daemon already running` but `daemon status` shows not running
+  
+  **Diagnosis**:
+  ```bash
+  happy daemon status
+  ```
+  
+  **Solution**:
+  ```bash
+  # Clean up stale state
+  rm ~/.happy/daemon.state.json
+  rm ~/.happy/daemon.lock
+  
+  # Restart daemon
+  happy daemon start
+  ```
+</Accordion>
+
+<Accordion title="Daemon version mismatch">
+  **Symptoms**: `Daemon version mismatch detected` in logs
+  
+  **Cause**: Happy CLI was upgraded but daemon still running old version
+  
+  **Solution**: Daemon should auto-restart. If not:
+  ```bash
+  happy daemon stop
+  happy daemon start
+  ```
+</Accordion>
+
+<Accordion title="Multiple daemon processes running">
+  **Symptoms**: `happy daemon list` shows duplicate entries or errors
+  
+  **Diagnosis**:
+  ```bash
+  happy doctor
+  # Look for multiple daemon processes
+  ```
+  
+  **Solution**:
+  ```bash
+  # Kill all runaway processes
+  happy doctor clean
+  
+  # Restart daemon cleanly
+  happy daemon start
+  ```
+</Accordion>
+
+### Session Problems
+
+<Accordion title="Session won't start">
+  **Symptoms**: Happy starts but Claude doesn't launch
+  
+  **Diagnosis**:
+  ```bash
+  # Check logs
+  tail -f ~/.happy/logs/$(ls -t ~/.happy/logs/*.log | head -1)
+  ```
+  
+  **Common causes**:
+  1. Claude Code not installed:
+     ```bash
+     npm install -g @anthropic-ai/claude-code
+     ```
+  2. Authentication expired:
+     ```bash
+     happy auth login --force
+     ```
+  3. Sandbox blocking execution:
+     ```bash
+     happy --no-sandbox
+     ```
+</Accordion>
+
+<Accordion title="Session stuck in 'thinking' state">
+  **Symptoms**: Session appears frozen, no responses
+  
+  **Diagnosis**:
+  ```bash
+  # Check if Claude process is alive
+  ps aux | grep claude
+  
+  # Check session logs
+  tail -f ~/.happy/logs/*.log
+  ```
+  
+  **Solution**:
+  ```bash
+  # Stop session via daemon
+  happy daemon list  # Get session ID
+  happy daemon stop-session <session-id>
+  
+  # Or kill all Happy processes
+  happy doctor clean
+  ```
+</Accordion>
+
+<Accordion title="Can't resume session">
+  **Symptoms**: `--resume` flag doesn't restore previous conversation
+  
+  **Check**:
+  ```bash
+  # List Claude sessions
+  ls -lt ~/.claude/projects/*/
+  ```
+  
+  **Note**: Resume creates a NEW session ID with copied history. This is expected Claude Code behavior.
+  
+  **Workaround**: Use the session ID shown in previous session output.
+</Accordion>
+
+### Network and Connectivity
+
+<Accordion title="Can't connect to Happy servers">
+  **Symptoms**: Connection errors, timeouts
+  
+  **Diagnosis**:
+  ```bash
+  # Test connectivity
+  curl -I https://api.happy-servers.com
+  
+  # Check environment
+  happy doctor
+  ```
+  
+  **Solutions**:
+  1. Check firewall settings
+  2. Verify proxy configuration
+  3. Test with custom server:
+     ```bash
+     export HAPPY_SERVER_URL=http://localhost:3005
+     happy
+     ```
+</Accordion>
+
+<Accordion title="WebSocket connection fails">
+  **Symptoms**: Sessions start but don't sync to mobile
+  
+  **Diagnosis**: Check daemon logs:
+  ```bash
+  tail -f $(happy daemon logs)
+  ```
+  
+  **Solutions**:
+  1. Restart daemon:
+     ```bash
+     happy daemon stop && happy daemon start
+     ```
+  2. Check firewall allows WebSocket connections
+  3. Verify authentication:
+     ```bash
+     happy auth status
+     ```
+</Accordion>
+
+### File System and Sandbox
+
+<Accordion title="Permission denied errors">
+  **Symptoms**: Claude can't read/write files
+  
+  **Diagnosis**:
+  ```bash
+  # Check sandbox configuration
+  happy sandbox status
+  ```
+  
+  **Solutions**:
+  1. Temporarily disable sandbox:
+     ```bash
+     happy --no-sandbox
+     ```
+  2. Reconfigure sandbox:
+     ```bash
+     happy sandbox configure
+     ```
+  3. Check file permissions:
+     ```bash
+     ls -la <problematic-file>
+     ```
+</Accordion>
+
+<Accordion title="Can't access workspace directory">
+  **Symptoms**: Sandbox blocks access to project files
+  
+  **Check configuration**:
+  ```bash
+  cat ~/.happy/settings.json | jq '.sandboxConfig'
+  ```
+  
+  **Solution**: Update workspace root:
+  ```bash
+  happy sandbox configure
+  # Select correct workspace directory
+  ```
+</Accordion>
+
+## Process Management
+
+### Viewing Processes
+
+See all Happy-related processes:
+
+```bash
+happy doctor
+# Scroll to "All Happy CLI Processes" section
+```
+
+Process types:
+- **Current Process**: The `doctor` command itself
+- **Daemon**: Background service
+- **Daemon-Spawned Sessions**: Remote-controlled sessions
+- **User Sessions**: Terminal-launched sessions
+- **Doctor**: Diagnostic commands
+
+### Cleaning Up Processes
+
+Kill all runaway Happy processes:
+
+```bash
+happy doctor clean
+```
+
+This finds and kills:
+- Stale daemon processes
+- Hung version check processes
+- Orphaned session processes
+- Zombie processes
+
+**Example output**:
+
+```
+Killing runaway process PID 12340: /usr/local/bin/node .../daemon start-sync
+Successfully killed runaway process PID 12340
+Killing runaway process PID 12341: /usr/local/bin/node .../--started-by daemon
+Successfully killed runaway process PID 12341
+Cleaned up 2 runaway processes
+```
+
+<Warning>
+  `happy doctor clean` kills ALL Happy processes except the current one. Active sessions will be terminated.
+</Warning>
+
+### Manual Process Management
+
+Find Happy processes manually:
+
+```bash
+# All Happy processes
+ps aux | grep happy
+
+# Only daemon
+ps aux | grep "daemon start"
+
+# Only sessions
+ps aux | grep "started-by"
+```
+
+Kill specific process:
+
+```bash
+# Graceful
+kill <pid>
+
+# Force kill
+kill -9 <pid>
+```
+
+## Log Analysis
+
+### Finding Logs
+
+Log location:
+
+```bash
+# Default
+~/.happy/logs/
+
+# Custom (if HAPPY_HOME_DIR set)
+$HAPPY_HOME_DIR/logs/
+```
+
+List recent logs:
+
+```bash
+# All logs
+ls -lt ~/.happy/logs/*.log
+
+# Session logs only
+ls -lt ~/.happy/logs/*.log | grep -v daemon
+
+# Daemon logs only
+ls -lt ~/.happy/logs/*daemon.log
+```
+
+### Viewing Logs
+
+Tail latest session log:
+
+```bash
+tail -f ~/.happy/logs/$(ls -t ~/.happy/logs/*.log | grep -v daemon | head -1)
+```
+
+Tail daemon log:
+
+```bash
+tail -f $(happy daemon logs)
+```
+
+Search logs for errors:
+
+```bash
+grep -i error ~/.happy/logs/*.log
+grep -i "failed" ~/.happy/logs/*.log
+grep -i "exception" ~/.happy/logs/*.log
+```
+
+### Log Format
+
+Logs include:
+
+- Timestamp
+- Log level (DEBUG, INFO, ERROR)
+- Component (DAEMON, AUTH, SESSION, etc.)
+- Message
+- Stack traces (for errors)
+
+Example:
+
+```
+[2026-03-04 14:30:45] [INFO] [DAEMON RUN] Starting daemon process...
+[2026-03-04 14:30:46] [DEBUG] [DAEMON RUN] Environment: {...}
+[2026-03-04 14:30:47] [INFO] [DAEMON RUN] Daemon started successfully
+[2026-03-04 14:35:12] [ERROR] [SESSION] Failed to connect to Claude: ECONNREFUSED
+  at Socket.<anonymous> (/path/to/file.ts:123:45)
+  ...
+```
+
+## Debug Mode
+
+Enable detailed logging:
+
+```bash
+export DEBUG=1
+happy
+```
+
+This outputs:
+- Detailed execution flow
+- API request/response data
+- WebSocket messages
+- Internal state changes
+
+**View debug logs**:
+
+```bash
+tail -f ~/.happy/logs/$(ls -t ~/.happy/logs/*.log | head -1)
+```
+
+## Environment Diagnostics
+
+### Check Environment
+
+View all environment variables:
+
+```bash
+happy doctor | grep -A 20 "Environment Variables"
+```
+
+Important variables:
+
+```bash
+# Happy configuration
+echo $HAPPY_HOME_DIR
+echo $HAPPY_SERVER_URL
+echo $HAPPY_PROJECT_ROOT
+
+# Debugging
+echo $DEBUG
+echo $NODE_ENV
+
+# Authentication
+echo $HAPPY_DAEMON_HEARTBEAT_INTERVAL
+```
+
+### Verify Installation
+
+Check Happy CLI is properly installed:
+
+```bash
+# Version
+happy --version
+
+# Which binary
+which happy
+
+# Installation location
+npm list -g happy-coder
+# or
+yarn global list | grep happy
+```
+
+### Check Dependencies
+
+Verify required tools:
+
+```bash
+# Node.js
+node --version
+
+# npm/yarn
+npm --version
+yarn --version
+
+# Claude Code
+claude --version
+```
+
+## Advanced Troubleshooting
+
+### State File Corruption
+
+If daemon state is corrupted:
+
+```bash
+# Backup current state
+cp ~/.happy/daemon.state.json ~/.happy/daemon.state.json.bak
+
+# Remove corrupted state
+rm ~/.happy/daemon.state.json
+
+# Restart daemon
+happy daemon start
+```
+
+### Lock File Issues
+
+If lock file is stuck:
+
+```bash
+# Check lock file
+cat ~/.happy/daemon.lock
+
+# Verify PID is not running
+ps -p <pid-from-lock-file>
+
+# Remove stale lock
+rm ~/.happy/daemon.lock
+```
+
+### Reset to Factory Defaults
+
+Completely reset Happy:
+
+```bash
+# Stop daemon
+happy daemon stop
+
+# Backup data (optional)
+cp -r ~/.happy ~/.happy.backup
+
+# Remove all Happy data
+rm -rf ~/.happy
+
+# Re-authenticate
+happy auth login
+```
+
+<Warning>
+  This removes all credentials, settings, and logs. You'll need to re-authenticate and reconfigure.
+</Warning>
+
+## Getting Help
+
+### Report Issues
+
+When reporting bugs, include:
+
+1. **System info**:
+   ```bash
+   happy doctor > happy-diagnosis.txt
+   ```
+
+2. **Relevant logs**:
+   ```bash
+   tail -100 ~/.happy/logs/$(ls -t ~/.happy/logs/*.log | head -1) > error-log.txt
+   ```
+
+3. **Steps to reproduce**
+
+4. **Expected vs actual behavior**
+
+### Support Channels
+
+- **GitHub Issues**: [https://github.com/slopus/happy-cli/issues](https://github.com/slopus/happy-cli/issues)
+- **Documentation**: [https://happy.engineering/](https://happy.engineering/)
+- **Community**: Join our Discord/Slack (link in docs)
+
+### Debug Checklist
+
+Before asking for help, verify:
+
+- [ ] Ran `happy doctor` and reviewed output
+- [ ] Checked authentication: `happy auth status`
+- [ ] Verified daemon: `happy daemon status`
+- [ ] Reviewed recent logs
+- [ ] Tried `happy doctor clean`
+- [ ] Tested with `--no-sandbox`
+- [ ] Checked network connectivity
+- [ ] Verified Node.js version (>= 18)
+- [ ] Claude Code is installed and working
+
+## Related Commands
+
+- [`happy auth status`](/guides/authentication) - Check authentication
+- [`happy daemon status`](/guides/daemon-management) - Check daemon
+- [`happy sandbox status`](/guides/sandbox-configuration) - Check sandbox

@@ -1,0 +1,392 @@
+---
+title: Building
+description: Build commands and processes for Happy Development packages
+---
+
+## Overview
+
+Each package in the Happy Development monorepo has its own build process. This guide covers building all packages for development and production.
+
+## Prerequisites
+
+Ensure you have:
+- Completed the [development setup](/development/setup)
+- Installed all dependencies with `yarn install`
+- Run `yarn generate` in the server package (if applicable)
+
+## Building All Packages
+
+From the repository root:
+
+```bash
+# Type-check all packages
+yarn build
+```
+
+This runs type-checking but does not produce build artifacts. Individual packages have their own build commands.
+
+## Building happy-cli
+
+### Development Build
+
+For local development without building:
+
+```bash
+cd packages/happy-cli
+
+# Run from source with tsx
+yarn dev
+
+# Or use the workspace command from root
+yarn cli
+```
+
+### Production Build
+
+Build distributable packages:
+
+```bash
+cd packages/happy-cli
+
+# Clean dist folder, type-check, and build with pkgroll
+yarn build
+```
+
+This creates:
+- `dist/index.cjs` - CommonJS bundle
+- `dist/index.mjs` - ES Module bundle
+- `dist/index.d.cts` - CommonJS type definitions
+- `dist/index.d.mts` - ESM type definitions
+
+### Running Built Binary
+
+After building:
+
+```bash
+# Run the built CLI
+yarn start
+
+# Or directly
+node ./bin/happy.mjs
+```
+
+### Development Variants
+
+The CLI supports parallel dev and stable installations:
+
+```bash
+# Development variant (uses ~/.happy-dev)
+yarn dev:variant
+yarn dev:daemon:start
+yarn dev:daemon:stop
+
+# Stable variant (uses ~/.happy)
+yarn stable
+yarn stable:daemon:start
+yarn stable:daemon:stop
+```
+
+## Building happy-app
+
+### Type Checking
+
+Always run type-checking after changes:
+
+```bash
+cd packages/happy-app
+yarn typecheck
+```
+
+### Development Builds
+
+#### Local Development Server
+
+```bash
+cd packages/happy-app
+
+# Start Expo dev server
+yarn start
+
+# Run on specific platforms
+yarn ios         # iOS simulator
+yarn android     # Android emulator
+yarn web         # Web browser
+```
+
+#### Environment Variants
+
+```bash
+# Development environment
+yarn start:dev
+yarn ios:dev
+yarn android:dev
+
+# Preview environment
+yarn start:preview
+yarn ios:preview
+yarn android:preview
+
+# Production environment
+yarn start:production
+yarn ios:production
+yarn android:production
+```
+
+### Native Builds
+
+#### Prebuild (Generate Native Projects)
+
+```bash
+yarn prebuild
+```
+
+This generates `ios/` and `android/` directories from Expo configuration.
+
+#### EAS Cloud Builds
+
+```bash
+# Development builds (for testing)
+yarn release:build:developer
+
+# App Store builds
+yarn release:build:appstore
+```
+
+#### Over-the-Air (OTA) Updates
+
+```bash
+# Preview branch
+yarn ota
+
+# Production branch
+yarn ota:production
+```
+
+### macOS Desktop (Tauri)
+
+```bash
+# Development with hot reload
+yarn tauri:dev
+
+# Build variants
+yarn tauri:build:dev
+yarn tauri:build:preview
+yarn tauri:build:production
+```
+
+### Web Build
+
+```bash
+# Development server
+yarn web
+
+# Test build (non-interactive)
+yarn web:test
+```
+
+## Building happy-server
+
+### Type Checking
+
+```bash
+cd packages/happy-server
+yarn build
+```
+
+Note: This only runs type-checking, not a full build.
+
+### Standalone Executable
+
+Build a single executable with embedded runtime:
+
+```bash
+yarn build:standalone
+```
+
+This creates `dist/happy-server` with:
+- Compiled TypeScript
+- Bundled dependencies
+- Embedded PGLite WASM files
+- Prisma migrations
+
+### Development Server
+
+```bash
+# Start with hot reload
+yarn dev
+
+# Or just start
+yarn start
+```
+
+### Docker Builds
+
+The server includes a multi-stage Dockerfile:
+
+```bash
+# Build image
+docker build -f Dockerfile.server -t happy-server .
+
+# Run container
+docker run -p 3000:3000 happy-server
+```
+
+## Building happy-agent
+
+### Production Build
+
+```bash
+cd packages/happy-agent
+
+# Clean, type-check, and build
+yarn build
+```
+
+Outputs:
+- `dist/index.cjs` / `dist/index.mjs`
+- Type definitions
+- Binary in `bin/happy-agent.mjs`
+
+### Development
+
+```bash
+# Run from source
+yarn dev
+```
+
+## Building happy-wire
+
+### Production Build
+
+```bash
+cd packages/happy-wire
+yarn build
+```
+
+Creates dual CommonJS and ESM bundles with type definitions.
+
+### Development
+
+No build needed during development - packages import directly from source.
+
+## Publishing Packages
+
+All packages use `release-it` for publishing:
+
+### Individual Package
+
+```bash
+cd packages/<package-name>
+yarn release
+```
+
+This:
+1. Runs tests
+2. Builds the package
+3. Bumps version
+4. Creates git tag
+5. Publishes to npm
+
+### All Packages
+
+From the repository root:
+
+```bash
+yarn release
+```
+
+This runs the release script to publish all packages in the correct order.
+
+## Build Output
+
+### CLI, Agent, and Wire Packages
+
+```
+dist/
+├── index.cjs          # CommonJS bundle
+├── index.mjs          # ES Module bundle
+├── index.d.cts        # CJS type definitions
+└── index.d.mts        # ESM type definitions
+```
+
+### App Package
+
+No build artifacts in repo:
+- Development: Run via Expo dev server
+- Production: Built via EAS or local Xcode/Android Studio
+
+### Server Package
+
+```
+dist/
+├── happy-server       # Standalone executable (if built)
+├── pglite.wasm        # PGLite WebAssembly
+├── pglite.data        # PGLite data
+└── prisma/migrations/ # Database migrations
+```
+
+## Common Build Issues
+
+### TypeScript Errors
+
+Run type-checking to identify issues:
+
+```bash
+yarn typecheck
+```
+
+### Dependency Issues
+
+Reinstall dependencies:
+
+```bash
+# From root
+rm -rf node_modules packages/*/node_modules
+yarn install
+```
+
+### Prisma Client Out of Sync
+
+```bash
+cd packages/happy-server
+yarn generate
+```
+
+### Cache Issues
+
+Clear build caches:
+
+```bash
+# Expo (app)
+cd packages/happy-app
+rm -rf .expo node_modules/.cache
+
+# TypeScript
+find . -name "tsconfig.tsbuildinfo" -delete
+```
+
+### Expo Prebuild Issues
+
+```bash
+cd packages/happy-app
+yarn prebuild  # Regenerates ios/ and android/
+```
+
+## Continuous Integration
+
+All packages include:
+- Pre-publish hooks that run tests and builds
+- Type-checking before builds
+- Test suite execution
+
+Build process order:
+1. Type-check (`tsc --noEmit`)
+2. Run tests (`vitest run`)
+3. Bundle code (`pkgroll` or `expo build`)
+4. Verify output
+
+## Next Steps
+
+- Set up [testing](/development/testing) to validate builds
+- Review [project structure](/development/project-structure) to understand package dependencies
+- Read [setup guide](/development/setup) for development environment

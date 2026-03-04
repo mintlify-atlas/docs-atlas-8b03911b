@@ -1,0 +1,420 @@
+---
+title: Testing
+description: Testing strategy and commands for Happy Development
+---
+
+## Overview
+
+All packages in the Happy Development monorepo use [Vitest](https://vitest.dev/) as the testing framework. Tests are colocated with source files for better maintainability.
+
+## Test File Naming
+
+Tests use two naming conventions:
+
+- **`*.test.ts`** - Standard unit tests
+- **`*.spec.ts`** - Specification tests
+- **`*.integration.test.ts`** - Integration tests
+
+Tests are placed alongside the source files they test:
+
+```
+src/
+├── auth.ts
+├── auth.test.ts
+├── api/
+│   ├── client.ts
+│   └── client.test.ts
+└── utils/
+    ├── encryption.ts
+    └── encryption.test.ts
+```
+
+## Running Tests
+
+### All Tests
+
+From any package directory:
+
+```bash
+yarn test
+```
+
+This runs the full test suite in CI mode (non-watch).
+
+### Watch Mode
+
+For test-driven development:
+
+```bash
+# In happy-app, Vitest watch is configured
+cd packages/happy-app
+yarn test  # Runs in watch mode
+```
+
+### Specific Test Files
+
+Using Vitest CLI:
+
+```bash
+# Run specific test file
+vitest src/auth.test.ts
+
+# Run tests matching pattern
+vitest encryption
+```
+
+## Package-Specific Testing
+
+### happy-cli
+
+**Test Approach**: Real integration tests without mocking
+
+```bash
+cd packages/happy-cli
+
+# Run all tests (builds first, then tests)
+yarn test
+
+# Run from source during development
+yarn dev  # Manual testing
+```
+
+**Test Files** (67+ test files):
+
+```
+src/
+├── api/
+│   ├── api.test.ts
+│   └── apiSession.test.ts
+├── claude/
+│   ├── claudeLocal.test.ts
+│   └── utils/
+│       ├── claudeCheckSession.test.ts
+│       ├── sessionProtocolMapper.test.ts
+│       └── permissionMode.test.ts
+├── daemon/
+│   └── daemon.integration.test.ts
+├── sandbox/
+│   ├── manager.test.ts
+│   └── network.integration.test.ts
+└── utils/
+    ├── expandEnvVars.test.ts
+    ├── deterministicJson.test.ts
+    └── tmux.test.ts
+```
+
+**Notable Tests**:
+- API integration tests (make real server calls)
+- Claude session scanner tests
+- Daemon lifecycle tests
+- Sandbox network isolation tests
+
+### happy-app
+
+**Test Approach**: Unit tests for utilities and logic
+
+```bash
+cd packages/happy-app
+
+# Run in watch mode (configured in package.json)
+yarn test
+```
+
+**Test Files** (14+ test files):
+
+```
+sources/
+├── sync/
+│   ├── messageMeta.test.ts
+│   ├── modeHacks.test.ts
+│   └── reducer/
+│       ├── reducer.spec.ts
+│       └── activityUpdateAccumulator.test.ts
+├── utils/
+│   ├── debounce.test.ts
+│   ├── toSnakeCase.test.ts
+│   ├── toolComparison.test.ts
+│   └── versionUtils.test.ts
+└── components/
+    └── autocomplete/
+        ├── findActiveWord.test.ts
+        └── applySuggestion.test.ts
+```
+
+**Test Configuration**:
+- Vitest for most tests
+- Jest-Expo preset available but Vitest preferred
+
+### happy-server
+
+**Test Approach**: Specification-style tests with focus on behavior
+
+```bash
+cd packages/happy-server
+yarn test
+```
+
+**Test Files** (13+ test files):
+
+```
+sources/
+├── app/
+│   ├── api/
+│   │   └── routes/
+│   │       └── v3SessionRoutes.test.ts
+│   └── social/
+│       └── friendNotification.spec.ts
+├── storage/
+│   └── processImage.spec.ts
+└── utils/
+    ├── lru.spec.ts
+    └── separateName.spec.ts
+```
+
+**Key Tests**:
+- API route validation tests
+- Database operation specs
+- Image processing utilities
+- Social features (friend notifications)
+
+### happy-agent
+
+**Test Approach**: Unit and integration tests
+
+```bash
+cd packages/happy-agent
+yarn test
+```
+
+**Test Files** (10+ test files):
+
+```
+src/
+├── api.test.ts
+├── auth.test.ts
+├── session.test.ts
+├── encryption.test.ts
+├── config.test.ts
+└── acceptance.test.ts
+```
+
+### happy-wire
+
+**Test Approach**: Schema validation tests
+
+```bash
+cd packages/happy-wire
+yarn test
+```
+
+**Test Files**:
+
+```
+src/
+├── messages.test.ts
+└── sessionProtocol.test.ts
+```
+
+## Writing Tests
+
+### Test Structure
+
+Follow this pattern:
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import { functionToTest } from './module'
+
+describe('functionToTest', () => {
+  it('should handle basic case', () => {
+    const result = functionToTest('input')
+    expect(result).toBe('expected')
+  })
+
+  it('should handle edge case', () => {
+    const result = functionToTest('')
+    expect(result).toBe('default')
+  })
+})
+```
+
+### Testing Async Code
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import { asyncFunction } from './module'
+
+describe('asyncFunction', () => {
+  it('should resolve with data', async () => {
+    const result = await asyncFunction()
+    expect(result).toBeDefined()
+  })
+
+  it('should reject on error', async () => {
+    await expect(asyncFunction('bad')).rejects.toThrow()
+  })
+})
+```
+
+### Integration Tests
+
+Integration tests make real API calls:
+
+```typescript
+import { describe, it, expect, beforeAll } from 'vitest'
+import { ApiClient } from './api'
+
+describe('ApiClient integration', () => {
+  let client: ApiClient
+
+  beforeAll(() => {
+    client = new ApiClient({
+      serverUrl: process.env.TEST_SERVER_URL || 'http://localhost:3005'
+    })
+  })
+
+  it('should authenticate', async () => {
+    const token = await client.authenticate()
+    expect(token).toBeDefined()
+  })
+})
+```
+
+## Test Coverage
+
+Current test file counts by package:
+
+- **happy-cli**: 67 test files
+- **happy-app**: 14 test files  
+- **happy-agent**: 10 test files
+- **happy-server**: 13 test files
+- **happy-wire**: 2 test files
+
+**Total**: 106+ test files
+
+## Testing Best Practices
+
+### General Guidelines
+
+1. **Colocate tests** with source files
+2. **Write tests before implementation** for utilities (TDD)
+3. **Test behavior, not implementation** details
+4. **Use descriptive test names** that explain the scenario
+5. **Avoid mocking** when possible (prefer real integration tests)
+
+### happy-cli Specific
+
+- Tests make real API calls (no mocking)
+- Build before testing (`yarn test` does this automatically)
+- Test files use both `.test.ts` and `.spec.ts` conventions
+- Daemon tests use real process spawning
+
+### happy-app Specific
+
+- Focus on utility and reducer logic
+- UI components tested through manual QA
+- Sync engine has comprehensive test coverage
+- Use Vitest (not Jest) for consistency
+
+### happy-server Specific
+
+- Write specs for all utility functions BEFORE implementation
+- Use `.spec.ts` suffix for specification tests
+- Test idempotency of operations
+- Verify transaction behavior
+
+## Running Tests in CI
+
+All packages include pre-publish hooks:
+
+```json
+{
+  "scripts": {
+    "prepublishOnly": "$npm_execpath run build && $npm_execpath test"
+  }
+}
+```
+
+This ensures:
+1. Code type-checks successfully
+2. All tests pass
+3. Build completes without errors
+
+Before any package is published.
+
+## Debugging Tests
+
+### Vitest UI
+
+```bash
+vitest --ui
+```
+
+Opens a browser-based test UI for interactive debugging.
+
+### Debug Specific Test
+
+```bash
+# Run single test in watch mode
+vitest src/auth.test.ts --watch
+
+# Run with debugging output
+DEBUG=* vitest src/auth.test.ts
+```
+
+### VSCode Debugging
+
+Add to `.vscode/launch.json`:
+
+```json
+{
+  "type": "node",
+  "request": "launch",
+  "name": "Debug Vitest",
+  "runtimeExecutable": "yarn",
+  "runtimeArgs": ["vitest", "--run"],
+  "console": "integratedTerminal",
+  "internalConsoleOptions": "neverOpen"
+}
+```
+
+## Common Testing Issues
+
+### Tests Fail After Dependency Updates
+
+Reinstall and rebuild:
+
+```bash
+yarn install
+yarn build
+yarn test
+```
+
+### Integration Tests Fail
+
+Check if services are running:
+
+```bash
+# For CLI tests
+cd packages/happy-server
+yarn dev  # Start local server
+
+# In another terminal
+cd packages/happy-cli
+yarn test
+```
+
+### TypeScript Errors in Tests
+
+Ensure Vitest types are available:
+
+```typescript
+/// <reference types="vitest" />
+import { describe, it, expect } from 'vitest'
+```
+
+## Next Steps
+
+- Review [building](/development/building) to understand the build process
+- Study [project structure](/development/project-structure) to navigate the codebase
+- Complete [setup](/development/setup) for local development environment

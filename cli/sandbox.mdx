@@ -1,0 +1,490 @@
+---
+title: 'happy sandbox'
+description: 'Configure OS-level sandboxing for AI agents'
+icon: 'shield-halved'
+---
+
+The `happy sandbox` command configures OS-level sandboxing to restrict AI agents' file system and network access, providing an additional security layer.
+
+## Syntax
+
+```bash
+happy sandbox <subcommand>
+```
+
+## Subcommands
+
+### configure
+
+Interactively configure sandbox settings.
+
+```bash
+happy sandbox configure
+```
+
+Launches an interactive wizard to set up sandboxing options.
+
+### status
+
+Display current sandbox configuration.
+
+```bash
+happy sandbox status
+```
+
+Shows whether sandboxing is enabled and current settings.
+
+### disable
+
+Disable sandboxing completely.
+
+```bash
+happy sandbox disable
+```
+
+Turns off OS-level sandboxing (sessions will run unrestricted).
+
+## Description
+
+Happy's sandbox provides OS-level isolation for AI agents:
+- **File access control**: Restrict read/write to specific directories
+- **Network restrictions**: Block or allow network access
+- **Process isolation**: Prevent access to sensitive system resources
+- **Per-session override**: Bypass sandbox with `--no-sandbox` flag
+
+<Note>
+  Sandboxing is platform-specific. Features and restrictions may vary by OS.
+</Note>
+
+## Configuration Options
+
+### Scope Mode
+
+Controls the breadth of file system access:
+
+<ParamField path="workspace" type="scope">
+  AI agent can access entire workspace root directory
+  
+  **Best for**: Monorepos, workspace-wide operations
+  
+  **Example**: Allow access to `~/Workspace/*`
+</ParamField>
+
+<ParamField path="per-project" type="scope">
+  AI agent restricted to current project directory only
+  
+  **Best for**: Maximum isolation, sensitive projects
+  
+  **Example**: Only allow access to current directory
+</ParamField>
+
+### Network Mode
+
+<ParamField path="allowed" type="network">
+  Allow all network access (default)
+  
+  **Use when**: Agent needs to install packages, fetch data, make API calls
+</ParamField>
+
+<ParamField path="blocked" type="network">
+  Block all network access (most secure)
+  
+  **Use when**: Working with sensitive data, offline development
+  
+  **Note**: May break package installation and API features
+</ParamField>
+
+### Localhost Binding
+
+<ParamField path="allowLocalBinding" type="boolean">
+  Allow binding to localhost ports (enabled by default)
+  
+  **Required for**: Development servers, local testing
+  
+  **Example**: Running `npm start`, `python -m http.server`
+</ParamField>
+
+## Examples
+
+### Initial Configuration
+
+```bash
+happy sandbox configure
+```
+
+Interactive wizard:
+```
+? How should file access be scoped?
+  ❯ workspace - Full workspace root directory
+    per-project - Only current project directory
+
+? Pick your workspace root directory
+  ❯ ~/Workspace
+    ~/Developer (suggested)
+    ~/Develop
+
+? How should network access be handled?
+  ❯ allowed - Allow all network access (default)
+    blocked - Block all network access (most secure)
+
+? Allow binding to localhost ports? (for dev servers) (Y/n)
+
+Sandbox configuration summary:
+{
+  "enabled": true,
+  "workspaceRoot": "~/Workspace",
+  "sessionIsolation": "workspace",
+  "customWritePaths": [],
+  "denyReadPaths": ["~/.ssh", "~/.aws", "~/.gnupg"],
+  "extraWritePaths": ["/tmp"],
+  "denyWritePaths": [".env"],
+  "networkMode": "allowed",
+  "allowedDomains": [],
+  "deniedDomains": [],
+  "allowLocalBinding": true
+}
+
+? Save and enable this sandbox configuration? (Y/n)
+
+✓ Sandbox configuration saved and enabled.
+Use --no-sandbox to bypass sandboxing for a single session.
+```
+
+### Check Current Status
+
+```bash
+happy sandbox status
+```
+
+Output when enabled:
+```
+Sandbox status
+Enabled: yes
+Scope: workspace
+Workspace root: ~/Workspace
+Network mode: allowed
+Allow localhost binding: yes
+```
+
+Output when not configured:
+```
+Sandbox is not configured. Run `happy sandbox configure`.
+```
+
+### Disable Sandboxing
+
+```bash
+happy sandbox disable
+```
+
+Output:
+```
+✓ Sandbox disabled.
+```
+
+### Per-Session Bypass
+
+Run a single session without sandbox:
+
+<CodeGroup>
+```bash Claude
+happy --no-sandbox
+```
+
+```bash Codex
+happy codex --no-sandbox
+```
+
+```bash Gemini
+happy gemini --no-sandbox
+```
+</CodeGroup>
+
+## Configuration File
+
+Sandbox settings are stored in:
+- `~/.happy/settings.json` (production)
+- `~/.happy-dev/settings.json` (development)
+
+### Example Configuration
+
+```json
+{
+  "sandboxConfig": {
+    "enabled": true,
+    "workspaceRoot": "~/Workspace",
+    "sessionIsolation": "workspace",
+    "customWritePaths": [],
+    "denyReadPaths": [
+      "~/.ssh",
+      "~/.aws",
+      "~/.gnupg"
+    ],
+    "extraWritePaths": ["/tmp"],
+    "denyWritePaths": [".env"],
+    "networkMode": "allowed",
+    "allowedDomains": [],
+    "deniedDomains": [],
+    "allowLocalBinding": true
+  }
+}
+```
+
+### Field Descriptions
+
+<ParamField path="enabled" type="boolean">
+  Master switch for sandboxing
+</ParamField>
+
+<ParamField path="workspaceRoot" type="string">
+  Root directory for workspace scope mode
+</ParamField>
+
+<ParamField path="sessionIsolation" type="string">
+  Isolation mode: `workspace` or `strict` (per-project)
+</ParamField>
+
+<ParamField path="denyReadPaths" type="string[]">
+  Paths that should never be read by AI agent
+  
+  **Default**: `~/.ssh`, `~/.aws`, `~/.gnupg` (sensitive credentials)
+</ParamField>
+
+<ParamField path="extraWritePaths" type="string[]">
+  Additional paths where agent can write
+  
+  **Default**: `/tmp` (for temporary files)
+</ParamField>
+
+<ParamField path="denyWritePaths" type="string[]">
+  Files that should never be written by agent
+  
+  **Default**: `.env` (environment variables)
+</ParamField>
+
+<ParamField path="networkMode" type="string">
+  Network access mode: `allowed` or `blocked`
+</ParamField>
+
+<ParamField path="allowLocalBinding" type="boolean">
+  Whether agent can bind to localhost ports
+</ParamField>
+
+## Protected Paths
+
+### Default Read Restrictions
+
+The following paths are blocked from reading by default:
+
+- `~/.ssh/` - SSH keys and certificates
+- `~/.aws/` - AWS credentials
+- `~/.gnupg/` - GPG keys
+
+### Default Write Restrictions
+
+The following files are blocked from writing:
+
+- `.env` files - Environment variables and secrets
+
+### Allowed Write Paths
+
+By default, agents can write to:
+
+- Workspace directory (if in workspace mode)
+- Current project directory
+- `/tmp/` - Temporary files
+
+## Use Cases
+
+### Maximum Security
+
+For sensitive projects:
+
+```bash
+happy sandbox configure
+# Select:
+# - Scope: per-project
+# - Network: blocked
+# - Localhost: no
+```
+
+This restricts the agent to:
+- Current directory only
+- No network access
+- No port binding
+
+### Development-Friendly
+
+For typical development:
+
+```bash
+happy sandbox configure
+# Select:
+# - Scope: workspace
+# - Network: allowed
+# - Localhost: yes
+```
+
+This allows:
+- Full workspace access
+- Network for packages/APIs
+- Development servers
+
+### Monorepo
+
+For large monorepo projects:
+
+```bash
+happy sandbox configure
+# Select workspace mode with your monorepo root
+# workspaceRoot: ~/code/my-monorepo
+```
+
+Agent can access all packages/apps within the monorepo.
+
+## Permission Modes vs Sandbox
+
+<Note>
+  Sandbox and permission modes are complementary security layers:
+  
+  - **Permission modes**: Control what operations the AI *attempts*
+  - **Sandbox**: Enforces OS-level restrictions on what's *possible*
+</Note>
+
+### Example: Bypass Permissions in Sandbox
+
+```bash
+happy --yolo  # Bypass permission prompts
+```
+
+Even with `--yolo`, the sandbox still prevents:
+- Reading `~/.ssh/`
+- Writing `.env` files
+- Accessing paths outside workspace (if configured)
+
+## Troubleshooting
+
+### Agent Can't Access Files
+
+If agent reports permission denied:
+
+```bash
+# Check sandbox status
+happy sandbox status
+
+# Temporarily disable
+happy --no-sandbox
+
+# Or reconfigure
+happy sandbox configure
+```
+
+### Package Installation Fails
+
+If network-based operations fail:
+
+```bash
+# Check network mode
+happy sandbox status
+
+# Run without sandbox for this session
+happy --no-sandbox
+
+# Or reconfigure to allow network
+happy sandbox configure  # Select "allowed" for network
+```
+
+### Dev Server Won't Start
+
+If localhost binding fails:
+
+```bash
+# Reconfigure to allow localhost
+happy sandbox configure
+# Enable: "Allow binding to localhost ports"
+
+# Or bypass for this session
+happy --no-sandbox
+```
+
+### Monorepo Access Issues
+
+If agent can't access other packages in monorepo:
+
+```bash
+# Reconfigure with correct workspace root
+happy sandbox configure
+# Set workspaceRoot to your monorepo root
+# Example: ~/code/my-monorepo
+```
+
+### Reset Configuration
+
+```bash
+# Disable current config
+happy sandbox disable
+
+# Start fresh
+happy sandbox configure
+```
+
+## Platform Support
+
+### macOS
+
+- ✅ File system restrictions
+- ✅ Network restrictions
+- ✅ Process isolation
+- Uses macOS sandbox profiles
+
+### Linux
+
+- ✅ File system restrictions
+- ✅ Network restrictions
+- ✅ Process isolation
+- Uses seccomp-bpf or similar
+
+### Windows
+
+- ⚠️ Limited support
+- May not enforce all restrictions
+- Use with caution
+
+<Warning>
+  Sandbox implementation is platform-specific. Test your configuration before relying on it for security.
+</Warning>
+
+## Best Practices
+
+### For Sensitive Projects
+
+1. Use per-project scope
+2. Block network access
+3. Review denyReadPaths
+4. Add sensitive files to denyWritePaths
+
+### For General Development
+
+1. Use workspace scope
+2. Allow network (for packages)
+3. Enable localhost binding
+4. Keep default restrictions
+
+### For CI/CD
+
+```bash
+# Disable sandbox in CI environments
+export HAPPY_SANDBOX_DISABLED=true
+happy --no-sandbox
+```
+
+## Related Commands
+
+- [happy](/cli/happy) - Uses sandbox when enabled
+- [happy codex](/cli/codex) - Respects sandbox configuration
+- [happy gemini](/cli/gemini) - Sandboxed by default
+- [happy doctor](/cli/doctor) - Check sandbox status
+
+<Note>
+  Sandboxing adds an important security layer but may restrict legitimate operations. Start with workspace mode and allowed network, then tighten as needed.
+</Note>

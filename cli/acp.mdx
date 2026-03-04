@@ -1,0 +1,347 @@
+---
+title: 'happy acp'
+description: 'Run any ACP-compatible AI agent with Happy'
+icon: 'plug'
+---
+
+The `happy acp` command runs any agent that implements the Agent Client Protocol (ACP), providing a generic interface for AI agent integration.
+
+## Syntax
+
+```bash
+happy acp <agent-name> [options]
+happy acp -- <command> [args]
+```
+
+## Description
+
+The ACP (Agent Client Protocol) command provides a unified interface for running various AI agents through Happy's infrastructure. It supports:
+- Known ACP-compatible agents (gemini, opencode)
+- Custom ACP commands
+- Permission management
+- Mobile control integration
+- Session persistence
+
+ACP is developed by [Zed Industries](https://zed.dev) and provides a standardized protocol for agent communication.
+
+## Arguments
+
+<ParamField path="agent-name" type="string">
+  Name of a known ACP agent to run. Currently supported:
+  - `gemini` - Google Gemini agent
+  - `opencode` - OpenCode agent
+</ParamField>
+
+<ParamField path="command" type="string">
+  Custom ACP-compatible command to execute (use with `--` separator)
+</ParamField>
+
+## Options
+
+<ParamField path="--started-by" type="string">
+  Session origin. Options: `daemon` or `terminal`. Internal use
+</ParamField>
+
+<ParamField path="--verbose" type="flag">
+  Print raw ACP backend and envelope events for debugging
+
+  ```bash
+  happy acp opencode --verbose
+  ```
+</ParamField>
+
+<ParamField path="--" type="separator">
+  Separates Happy options from the custom ACP command. Everything after `--` is treated as the agent command
+
+  ```bash
+  happy acp -- opencode --acp
+  ```
+</ParamField>
+
+## Known Agents
+
+### Gemini
+
+```bash
+happy acp gemini
+```
+
+Runs Google Gemini through the generic ACP interface. This is equivalent to `happy gemini` but uses the ACP protocol layer.
+
+<Note>
+  For Gemini, we recommend using `happy gemini` directly for the best experience with Gemini-specific features.
+</Note>
+
+### OpenCode
+
+```bash
+happy acp opencode
+```
+
+Runs the OpenCode agent through ACP.
+
+## Examples
+
+### Run Known Agent
+
+```bash
+happy acp gemini
+```
+
+Starts Gemini using the ACP protocol.
+
+### Run Custom ACP Command
+
+```bash
+happy acp -- opencode --acp
+```
+
+Executes a custom command that implements the ACP protocol. The `--` separator tells Happy that everything after it is part of the agent command.
+
+### Verbose Mode
+
+```bash
+happy acp opencode --verbose
+```
+
+Shows detailed ACP protocol events:
+
+```
+[10:30] Incoming user message: "Help me refactor this code"
+[10:30] Tool: read_file started (callId=call_1)
+[10:30] Tool: read_file completed (callId=call_1)
+[10:30] Outgoing message: "I'll help you refactor..."
+```
+
+### Custom Agent with Arguments
+
+```bash
+happy acp -- my-custom-agent --model gpt-4 --temperature 0.7
+```
+
+Runs a custom ACP agent with specific parameters.
+
+## Output
+
+### Standard Mode
+
+In standard mode, you see cleaned-up messages:
+
+```
+[10:30] User: Help me refactor this function
+[10:30] Assistant: I'll help you refactor that function...
+[10:30] Tool: read_file started
+[10:30] Tool: read_file completed
+[10:30] Assistant: Here's the refactored version...
+```
+
+### Verbose Mode
+
+With `--verbose`, you see raw ACP events:
+
+```
+[10:30] Incoming user message: "Help me refactor this function"
+[10:30] Tool: read_file started (callId=call_abc123)
+[10:30] [Raw] {"type":"tool_call_start","id":"call_abc123",...}
+[10:30] Tool: read_file completed (callId=call_abc123)
+[10:30] [Raw] {"type":"tool_call_end","id":"call_abc123",...}
+[10:30] Outgoing message: "I'll help you..."
+```
+
+## ACP Protocol
+
+The Agent Client Protocol (ACP) is a standardized protocol for AI agent communication. It defines:
+- Message format for agent communication
+- Tool calling conventions
+- Permission request/response flow
+- Session state management
+- Configuration options
+
+### Protocol Events
+
+Common ACP events you might see with `--verbose`:
+
+<CodeGroup>
+```json User Message
+{
+  "type": "user_message",
+  "message": "Help me with this code"
+}
+```
+
+```json Tool Call
+{
+  "type": "tool_call_start",
+  "id": "call_123",
+  "name": "read_file",
+  "arguments": {"path": "example.py"}
+}
+```
+
+```json Agent Response
+{
+  "type": "agent_message",
+  "content": "I'll help you with that..."
+}
+```
+</CodeGroup>
+
+## Creating Custom ACP Agents
+
+To create your own ACP-compatible agent:
+
+1. Implement the ACP protocol in your agent
+2. Ensure it accepts standard ACP messages
+3. Output ACP-formatted events
+4. Run it through Happy:
+
+```bash
+happy acp -- /path/to/your-agent --acp
+```
+
+Happy will handle:
+- Session management
+- Mobile connectivity
+- Permission handling
+- State synchronization
+
+## Configuration
+
+### Agent-Specific Config
+
+Each agent may have its own configuration. For example, Gemini through ACP uses:
+- `~/.gemini/config.json` - Model and project settings
+- `~/.gemini/oauth_creds.json` - Authentication tokens
+
+### Happy Config
+
+Happy's ACP integration respects:
+- Sandbox settings from `happy sandbox configure`
+- Permission modes from mobile app
+- Session metadata and state
+
+## Session Management
+
+### Mode Changes
+
+When permission mode or model changes, Happy automatically:
+1. Stops the current agent session
+2. Preserves conversation context
+3. Restarts with new settings
+4. Resumes with full history
+
+### Remote Control
+
+Control ACP agents from your mobile device:
+- Send prompts and receive responses
+- Change permission modes
+- Abort or kill sessions
+- Monitor tool executions
+
+## Troubleshooting
+
+### Agent Not Found
+
+If you see "Unknown ACP agent":
+
+```bash
+# Check known agents
+happy acp gemini  # Use known agent name
+
+# Or use custom command with --
+happy acp -- /full/path/to/agent
+```
+
+### Protocol Errors
+
+If the agent fails with protocol errors:
+
+```bash
+# Enable verbose mode to see raw events
+happy acp opencode --verbose
+
+# Check logs
+happy doctor
+```
+
+### Authentication Issues
+
+Ensure you're authenticated:
+
+```bash
+happy auth status
+```
+
+And that vendor tokens are connected:
+
+```bash
+happy connect status
+```
+
+### Debug Mode
+
+Enable full debugging:
+
+```bash
+DEBUG=* happy acp gemini --verbose
+```
+
+Logs will be written to `~/.happy/logs/`.
+
+## Performance Considerations
+
+### Verbose Mode Impact
+
+Using `--verbose` adds overhead from:
+- Console output formatting
+- Event serialization
+- Additional logging
+
+Use it only for debugging, not production sessions.
+
+### Agent Restarts
+
+Mode changes trigger agent restarts. To minimize restarts:
+- Set permission mode once at session start
+- Avoid frequent model changes
+- Use consistent configuration
+
+## Advanced Usage
+
+### Chaining with Other Tools
+
+```bash
+# Pipe agent output to file
+happy acp -- my-agent --output json > results.json
+
+# Use with environment variables
+MY_VAR=value happy acp -- my-agent
+```
+
+### Custom MCP Servers
+
+ACP agents can use Happy's MCP server for enhanced capabilities:
+- Access to session metadata
+- Mobile device communication
+- Permission management
+
+The MCP server is automatically provided to all ACP agents.
+
+## Protocol Specification
+
+For the full ACP specification, see:
+- [Agent Client Protocol Documentation](https://github.com/zed-industries/agent-client-protocol)
+
+The protocol is maintained by Zed Industries and uses the official `@agentclientprotocol/sdk` package.
+
+## Related Commands
+
+- [happy gemini](/cli/gemini) - Google Gemini agent
+- [happy codex](/cli/codex) - OpenAI Codex agent
+- [happy connect](/cli/connect) - Connect API keys
+- [happy sandbox](/cli/sandbox) - Configure sandboxing
+- [happy doctor](/cli/doctor) - System diagnostics
+
+<Note>
+  The `acp` command provides a generic interface. For the best experience with specific agents, use their dedicated commands (e.g., `happy gemini` instead of `happy acp gemini`).
+</Note>

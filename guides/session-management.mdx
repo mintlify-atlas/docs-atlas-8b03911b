@@ -1,0 +1,464 @@
+---
+title: Session Management
+description: Understand the lifecycle of Happy AI sessions and how to manage them effectively
+---
+
+# Session Management
+
+Happy sessions represent individual AI conversations that can run locally or be controlled remotely. Understanding the session lifecycle helps you manage your AI workflows effectively.
+
+## Session Lifecycle
+
+A Happy session goes through several stages from creation to termination:
+
+<Steps>
+  <Step title="Session Creation">
+    When you run `happy`, a new session is created with:
+    - Unique session ID (UUID)
+    - Project path (current directory)
+    - API client for server communication
+    - WebSocket connection for real-time updates
+    - Message queue for bidirectional communication
+  </Step>
+  
+  <Step title="Authentication & Setup">
+    Session authenticates with Happy servers using credentials from `~/.happy/`:
+    - Verifies authentication token
+    - Establishes encrypted WebSocket connection
+    - Registers with daemon (if running)
+  </Step>
+  
+  <Step title="Mode Selection">
+    Session starts in one of two modes:
+    - **Local mode**: Interactive terminal control (default)
+    - **Remote mode**: Mobile app control (via `--happy-starting-mode remote`)
+  </Step>
+  
+  <Step title="Claude Integration">
+    Session connects to Claude Code:
+    - **Local mode**: Spawns Claude process with PTY for terminal interaction
+    - **Remote mode**: Uses Claude SDK for programmatic control
+  </Step>
+  
+  <Step title="Active Session">
+    Session runs and processes messages:
+    - Forwards user input to Claude
+    - Streams Claude responses back
+    - Handles tool usage and permissions
+    - Syncs state with Happy servers
+  </Step>
+  
+  <Step title="Session Termination">
+    Session ends when:
+    - User exits Claude (Ctrl+D, `/exit`)
+    - Session stopped via daemon
+    - Process receives termination signal
+    - Unhandled error occurs
+  </Step>
+</Steps>
+
+## Session Modes
+
+### Local Mode (Interactive)
+
+Default mode when you run `happy` from the terminal:
+
+```bash
+happy
+```
+
+**Characteristics:**
+- Full terminal interaction
+- Real-time output in your terminal
+- Keyboard input directly to Claude
+- Still synced to Happy cloud for mobile viewing
+- Can switch to remote mode dynamically
+
+**Under the hood:**
+- Spawns Claude Code as child process
+- Uses PTY (pseudo-terminal) for terminal emulation
+- File watcher monitors Claude session files
+- Messages parsed and forwarded to Happy servers
+
+### Remote Mode
+
+Controlled entirely from the mobile app:
+
+```bash
+happy --happy-starting-mode remote --started-by daemon
+```
+
+**Characteristics:**
+- No terminal interaction
+- All input comes from mobile app
+- All output sent to mobile app
+- Runs in background (daemon-spawned)
+
+**Under the hood:**
+- Uses Claude SDK directly (no PTY)
+- Message queue handles mobile ↔ Claude communication
+- SDK streaming responses forwarded to mobile
+- Permission requests sent to mobile app
+
+## Session Components
+
+### Session Object
+
+Core session state defined in `src/claude/session.ts`:
+
+```typescript
+class Session {
+  readonly path: string;              // Project directory
+  readonly logPath: string;           // Session log file
+  readonly api: ApiClient;            // API client
+  readonly client: ApiSessionClient;  // WebSocket client
+  readonly queue: MessageQueue;       // Message queue
+  readonly hookSettingsPath: string;  // Hook settings
+  readonly jsRuntime: 'node' | 'bun'; // JS runtime
+  
+  sessionId: string | null;  // Claude session ID
+  mode: 'local' | 'remote';  // Current mode
+  thinking: boolean;          // Claude thinking state
+}
+```
+
+### Session Tracking
+
+The daemon tracks active sessions:
+
+```typescript
+interface TrackedSession {
+  pid: number;                // Process ID
+  happySessionId: string;     // Happy session UUID
+  projectPath: string;        // Working directory
+  startedBy: string;          // Origin (daemon/terminal)
+  process: ChildProcess;      // Process handle
+}
+```
+
+View tracked sessions:
+
+```bash
+happy daemon list
+```
+
+### Keep-Alive Mechanism
+
+Sessions send periodic heartbeats to the server:
+
+```typescript
+// Every 2 seconds
+client.keepAlive(thinking, mode);
+```
+
+Heartbeat includes:
+- Current thinking state (Claude is processing)
+- Current mode (local or remote)
+- Timestamp
+
+## Session Hooks
+
+Happy uses Claude Code's SessionStart hook to track session lifecycle:
+
+### Hook Configuration
+
+Generated in `src/claude/utils/generateHookSettings.ts`:
+
+```json
+{
+  "hooks": [
+    {
+      "name": "SessionStart",
+      "command": ["node", "/path/to/sessionStartHook.js"],
+      "env": {
+        "HAPPY_WEBHOOK_URL": "http://127.0.0.1:50097/session-started",
+        "HAPPY_SESSION_PID": "12345",
+        "HAPPY_SESSION_ID": "session-uuid",
+        "HAPPY_PROJECT_PATH": "/Users/john/projects/myapp"
+      }
+    }
+  ]
+}
+```
+
+### Hook Behavior
+
+When Claude starts or resumes a session:
+
+1. **Fresh session**: Claude generates new session ID
+2. **Resume session**: Claude uses existing session ID
+3. **Hook triggers**: `SessionStart` hook executes
+4. **Webhook call**: Hook POSTs to daemon's `/session-started` endpoint
+5. **Daemon updates**: Daemon associates Happy session with Claude session
+
+<Note>
+  The hook enables Happy to discover Claude's session ID dynamically, supporting both fresh starts and session resumption.
+</Note>
+
+## Session Resumption
+
+Claude Code supports resuming previous sessions:
+
+```bash
+# Resume last session
+happy --resume
+
+# Resume specific session
+happy --resume <session-id>
+```
+
+### Resume Behavior
+
+<Accordion title="Session ID Changes">
+  **Important**: When resuming, Claude creates a NEW session ID, not the original.
+  
+  Example:
+  - Original session: `aada10c6-9299-4c45-abc4-91db9c0f935d`
+  - Resumed session: `1433467f-ff14-4292-b5b2-2aac77a808f0`
+  
+  The new session file contains complete history from the original session with updated session IDs.
+</Accordion>
+
+<Accordion title="History Preservation">
+  The new session file includes:
+  1. Summary of previous conversation
+  2. Complete history from original session (with NEW session ID)
+  3. New messages from current interaction
+  
+  Claude maintains full context and can answer questions about previous interactions.
+</Accordion>
+
+<Accordion title="File Structure">
+  **Original session file**: Remains unchanged in `~/.claude/projects/.../`
+  
+  **New session file**: Created with new ID, contains prefixed history
+  
+  Example:
+  ```jsonl
+  {"type":"summary","summary":"Previous conversation summary",...}
+  {"sessionId":"new-id","message":{"role":"user","content":"old message"},...}
+  {"sessionId":"new-id","message":{"role":"assistant","content":"old response"},...}
+  {"sessionId":"new-id","message":{"role":"user","content":"new message"},...}
+  ```
+</Accordion>
+
+## Session Configuration
+
+### Runtime Selection
+
+Choose JavaScript runtime for Claude Code:
+
+```bash
+# Use Bun instead of Node.js
+happy --js-runtime bun
+```
+
+### Environment Variables
+
+Pass custom environment variables to Claude:
+
+```bash
+# Custom API endpoint (e.g., for claude-code-router)
+happy --claude-env ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+
+# Multiple variables
+happy --claude-env VAR1=value1 --claude-env VAR2=value2
+```
+
+### Chrome Mode
+
+Enable browser access for Claude:
+
+```bash
+# Enable for this session
+happy --chrome
+
+# Disable even if default is on
+happy --no-chrome
+```
+
+### Settings File
+
+<Warning>
+  The `--settings` flag is reserved for Happy's internal session tracking. Your custom settings file will be ignored.
+  
+  To configure Claude, edit `~/.claude/settings.json` instead.
+</Warning>
+
+## Message Flow
+
+### Local Mode Flow
+
+```
+User Terminal Input
+       ↓
+   PTY (Claude)
+       ↓
+  File Watcher
+       ↓
+Message Parser
+       ↓
+  Happy Server ──→ Mobile App (view only)
+```
+
+### Remote Mode Flow
+
+```
+Mobile App Input
+       ↓
+  Happy Server
+       ↓
+Message Queue
+       ↓
+ Claude SDK
+       ↓
+Streaming Response
+       ↓
+  Happy Server ──→ Mobile App
+```
+
+## Session Cleanup
+
+When a session ends:
+
+<Steps>
+  <Step title="Stop keep-alive">
+    Clear the heartbeat interval to stop sending keep-alive messages.
+  </Step>
+  
+  <Step title="Clear callbacks">
+    Remove all session-found callbacks and event listeners.
+  </Step>
+  
+  <Step title="Close connections">
+    Disconnect WebSocket connection to Happy servers.
+  </Step>
+  
+  <Step title="Cleanup resources">
+    - Kill Claude process (if running)
+    - Close file watchers
+    - Clear message queue
+    - Delete temporary hook settings file
+  </Step>
+  
+  <Step title="Update daemon">
+    Daemon removes session from tracked sessions map.
+  </Step>
+</Steps>
+
+## Session Logs
+
+Each session creates a log file:
+
+**Location**: `~/.happy/logs/<timestamp>.log`
+
+**Contents**:
+- Session creation and termination
+- Mode switches (local ↔ remote)
+- Claude messages and responses
+- Error messages and stack traces
+- Debug information (if `DEBUG=1`)
+
+**View logs**:
+
+```bash
+# List recent logs
+ls -lt ~/.happy/logs/*.log | head -5
+
+# Tail latest log
+tail -f ~/.happy/logs/$(ls -t ~/.happy/logs/*.log | head -1)
+
+# Search logs
+grep "ERROR" ~/.happy/logs/*.log
+```
+
+## Advanced Features
+
+### Permission Mode
+
+Configure permission handling:
+
+```bash
+# Skip all permissions (dangerous!)
+happy --yolo
+# Equivalent to:
+happy --dangerously-skip-permissions
+
+# Use specific permission mode
+# (configured via Claude settings)
+```
+
+### Sandbox Integration
+
+Sessions respect sandbox configuration:
+
+```bash
+# Disable sandbox for this session
+happy --no-sandbox
+
+# Configure sandbox globally
+happy sandbox configure
+```
+
+See [Sandbox Configuration](/guides/sandbox-configuration) for details.
+
+### MCP Servers
+
+Sessions can load MCP (Model Context Protocol) servers defined in Claude settings:
+
+```json
+// ~/.claude/settings.json
+{
+  "mcpServers": {
+    "myserver": {
+      "command": "node",
+      "args": ["/path/to/server.js"]
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Session won't start
+
+```bash
+# Check authentication
+happy auth status
+
+# Check daemon
+happy daemon status
+
+# Run diagnostics
+happy doctor
+```
+
+### Session ID not found
+
+If Happy can't detect Claude's session ID:
+
+1. Check hook settings are being applied
+2. Verify daemon is receiving webhook
+3. Check session logs for errors
+
+### Session stuck in thinking
+
+If session appears frozen:
+
+1. Check Claude process is running: `ps aux | grep claude`
+2. View session logs: `tail -f ~/.happy/logs/*.log`
+3. Stop session: `happy daemon stop-session <session-id>`
+
+### Mode switch not working
+
+If you can't switch between local and remote mode:
+
+1. Ensure daemon is running: `happy daemon status`
+2. Check WebSocket connection in logs
+3. Restart session
+
+## Related Commands
+
+- [`happy daemon list`](/guides/daemon-management) - View active sessions
+- [`happy doctor`](/guides/troubleshooting) - Diagnose session issues
+- [`happy sandbox`](/guides/sandbox-configuration) - Configure session sandboxing

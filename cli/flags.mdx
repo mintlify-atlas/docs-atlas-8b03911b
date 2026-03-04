@@ -1,0 +1,382 @@
+---
+title: "CLI Flags"
+description: "Command-line flags and options for Happy CLI"
+icon: "flag"
+---
+
+Happy CLI supports all Claude Code flags plus additional Happy-specific flags for enhanced functionality.
+
+## Happy-Specific Flags
+
+These flags are unique to Happy CLI and control Happy-specific features.
+
+### --yolo
+
+Shortcut for `--dangerously-skip-permissions` (bypasses permission prompts).
+
+```bash
+happy --yolo
+```
+
+<Warning>
+  Use with caution. This bypasses all permission checks and allows the AI to execute commands without confirmation.
+</Warning>
+
+### --chrome
+
+Enable Chrome browser access for this session.
+
+```bash
+happy --chrome
+```
+
+Allows Claude to interact with your Chrome browser during the session.
+
+### --no-chrome
+
+Disable Chrome mode even if it's enabled by default in settings.
+
+```bash
+happy --no-chrome
+```
+
+### --no-sandbox
+
+Disable Happy's OS-level sandbox for this session.
+
+```bash
+happy --no-sandbox
+```
+
+<Info>
+  Sandboxing must be configured first using `happy sandbox configure`. This flag bypasses the sandbox for a single session.
+</Info>
+
+### --js-runtime
+
+Specify the JavaScript runtime to use for spawning Claude Code.
+
+```bash
+happy --js-runtime bun
+happy --js-runtime node
+```
+
+**Options:** `node`, `bun`
+
+### --claude-env
+
+Pass environment variables to Claude Code.
+
+```bash
+happy --claude-env ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+happy --claude-env CUSTOM_VAR=value
+```
+
+Multiple environment variables can be passed:
+
+```bash
+happy --claude-env VAR1=value1 --claude-env VAR2=value2
+```
+
+**Format:** `KEY=VALUE`
+
+<Tip>
+  Use `--claude-env ANTHROPIC_BASE_URL` to route requests through a custom API endpoint like claude-code-router.
+</Tip>
+
+### --happy-starting-mode
+
+Specify the starting mode for Happy.
+
+```bash
+happy --happy-starting-mode local
+happy --happy-starting-mode remote
+```
+
+**Options:**
+- `local`: Start in local/terminal mode
+- `remote`: Start in remote/mobile-controlled mode
+
+### --started-by
+
+Indicate how the session was started (internal flag).
+
+```bash
+happy --started-by daemon
+happy --started-by terminal
+```
+
+**Options:** `daemon`, `terminal`
+
+<Note>
+  This flag is typically used internally by Happy daemon and not by end users.
+</Note>
+
+## Common Claude Code Flags
+
+Happy supports all Claude Code flags. Here are the most commonly used:
+
+### --help, -h
+
+Show help information.
+
+```bash
+happy --help
+happy -h
+```
+
+### --version, -v
+
+Show version information.
+
+```bash
+happy --version
+happy -v
+```
+
+### --resume
+
+Resume a previous Claude session.
+
+```bash
+happy --resume
+happy --resume <session-id>
+```
+
+When resuming, a new session is created with the complete history from the original session.
+
+### --print
+
+Print output to stdout instead of interactive terminal.
+
+```bash
+happy --print "list files in this directory"
+```
+
+### --output-format
+
+Specify output format when using `--print`.
+
+```bash
+happy --print --output-format stream-json "analyze this code"
+happy --print --output-format text "what's in this file?"
+```
+
+**Options:** `stream-json`, `text`
+
+### --verbose
+
+Enable verbose output.
+
+```bash
+happy --verbose
+```
+
+### --dangerously-skip-permissions
+
+Skip all permission prompts (use with caution).
+
+```bash
+happy --dangerously-skip-permissions
+```
+
+<Warning>
+  This is equivalent to `--yolo` and should be used with extreme caution.
+</Warning>
+
+## ACP Agent Flags
+
+Flags specific to ACP (Agent Client Protocol) agents like Gemini.
+
+### --verbose (ACP)
+
+Print raw ACP backend and envelope events.
+
+```bash
+happy acp gemini --verbose
+happy acp opencode --verbose
+```
+
+### -- (double dash)
+
+Delimiter for custom ACP commands.
+
+```bash
+happy acp -- opencode --acp
+happy acp -- custom-agent --custom-flag
+```
+
+Everything after `--` is passed directly to the ACP agent command.
+
+## Subcommand-Specific Flags
+
+### Notify Command
+
+```bash
+happy notify -p "message" [-t "title"]
+```
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `-p` | Notification message | Yes |
+| `-t` | Notification title | No |
+
+**Example:**
+
+```bash
+happy notify -p "Deployment complete!"
+happy notify -p "Build finished" -t "CI/CD"
+```
+
+### Auth Command
+
+```bash
+happy auth login [--force]
+happy auth logout
+happy auth whoami
+```
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Force re-authentication even if already logged in |
+
+### Daemon Command
+
+```bash
+happy daemon start
+happy daemon stop
+happy daemon status
+happy daemon list
+happy daemon logs
+```
+
+No special flags; each subcommand is self-contained.
+
+### Sandbox Command
+
+```bash
+happy sandbox configure
+happy sandbox status
+happy sandbox disable
+```
+
+No flags; uses interactive prompts for configuration.
+
+### Connect Command
+
+```bash
+happy connect [provider]
+```
+
+Connect AI vendor API keys. Providers: `anthropic`, `openai`, `gemini`, etc.
+
+## Flag Combinations
+
+Flags can be combined for powerful workflows:
+
+### Development with Custom API
+
+```bash
+happy --js-runtime bun --claude-env ANTHROPIC_BASE_URL=http://localhost:3456 --chrome
+```
+
+### Safe Testing
+
+```bash
+happy --no-sandbox --verbose
+```
+
+### Automated Scripting
+
+```bash
+happy --print --output-format stream-json "run tests" | jq
+```
+
+### Resume with Chrome
+
+```bash
+happy --resume <session-id> --chrome
+```
+
+## Flag Precedence
+
+When multiple configuration sources exist, flags take precedence in this order:
+
+1. **Command-line flags** (highest priority)
+2. **Environment variables**
+3. **Settings file** (`~/.happy/settings.json`)
+4. **Defaults** (lowest priority)
+
+**Example:**
+
+```bash
+# settings.json has chromeMode: true
+# But --no-chrome flag disables it for this session
+happy --no-chrome
+```
+
+## Tips and Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use --yolo carefully">
+    The `--yolo` flag bypasses all safety checks. Only use it in trusted environments or for well-understood tasks.
+  </Accordion>
+
+  <Accordion title="Chrome mode for web tasks">
+    Enable `--chrome` when you need Claude to interact with web content or test web applications.
+  </Accordion>
+
+  <Accordion title="Custom API endpoints">
+    Use `--claude-env ANTHROPIC_BASE_URL` to route through proxies or local development servers:
+    
+    ```bash
+    happy --claude-env ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+    ```
+  </Accordion>
+
+  <Accordion title="Resume sessions efficiently">
+    Use `--resume` without arguments to get a list of recent sessions to choose from.
+  </Accordion>
+
+  <Accordion title="Combine with Unix tools">
+    Happy's `--print --output-format stream-json` works great with `jq` and other CLI tools:
+    
+    ```bash
+    happy --print --output-format stream-json "analyze code" | jq '.message.content'
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## All Flags Reference
+
+<CardGroup cols={2}>
+  <Card title="Session Control" icon="play">
+    `--resume`, `--print`, `--output-format`, `--verbose`
+  </Card>
+  <Card title="Safety" icon="shield">
+    `--yolo`, `--dangerously-skip-permissions`, `--no-sandbox`
+  </Card>
+  <Card title="Features" icon="sparkles">
+    `--chrome`, `--no-chrome`, `--js-runtime`
+  </Card>
+  <Card title="Configuration" icon="sliders">
+    `--claude-env`, `--happy-starting-mode`, `--settings`
+  </Card>
+</CardGroup>
+
+## Getting More Help
+
+For the complete list of Claude Code flags:
+
+```bash
+happy --help
+```
+
+For subcommand-specific help:
+
+```bash
+happy <subcommand> --help
+happy auth --help
+happy daemon --help
+happy sandbox --help
+```

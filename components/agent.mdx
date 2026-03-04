@@ -1,0 +1,358 @@
+---
+title: "Agent (happy-agent)"
+description: "Standalone CLI for remote control of Happy Coder sessions"
+icon: "robot"
+---
+
+The Happy Agent is a lightweight, standalone CLI tool that provides remote control capabilities for Happy Coder sessions without requiring the full Happy CLI daemon. It's designed for scenarios where you want to monitor or control AI coding sessions from a different machine.
+
+## Overview
+
+The agent enables users to:
+
+- List and monitor active sessions remotely
+- Get real-time session status updates
+- View session message history
+- Send commands to running sessions
+- Control sessions without installing the full CLI
+
+<Note>
+  The agent is **separate from the main Happy CLI**. It's a lightweight client for remote control, while the main CLI manages the daemon and agent execution.
+</Note>
+
+## Key Differences from Main CLI
+
+<CardGroup cols={2}>
+  <Card title="Main CLI (happy-cli)" icon="terminal">
+    - Runs daemon process
+    - Spawns AI agent sessions
+    - Manages local machine state
+    - Full feature set
+  </Card>
+  <Card title="Agent CLI (happy-agent)" icon="robot">
+    - No daemon required
+    - Read-only session monitoring
+    - Remote control commands
+    - Lightweight installation
+  </Card>
+</CardGroup>
+
+## Installation
+
+```bash
+npm install -g @slopus/agent
+```
+
+Or use directly with npx:
+
+```bash
+npx @slopus/agent list
+```
+
+## Architecture
+
+Simple, focused architecture:
+
+```
+src/
+├── index.ts        # CLI entry point with Commander
+├── api.ts          # REST API client
+├── session.ts      # WebSocket session client
+├── auth.ts         # Authentication flow
+├── config.ts       # Configuration management
+├── credentials.ts  # Credential storage
+├── encryption.ts   # E2E encryption utilities
+└── output.ts       # Terminal formatting
+```
+
+### Core Components
+
+**Commander.js**: CLI framework for command parsing
+**Socket.IO Client**: WebSocket connection for real-time updates
+**TweetNaCl**: Cryptographic operations for encryption
+**Axios**: HTTP client for REST API calls
+**chalk**: Terminal output formatting
+
+## Commands
+
+<AccordionGroup>
+  <Accordion title="Authentication">
+    ### `happy-agent auth login`
+    Authenticate via QR code displayed in terminal.
+
+    ### `happy-agent auth logout`
+    Clear stored credentials.
+
+    ### `happy-agent auth status`
+    Show current authentication status.
+
+    ```bash
+    happy-agent auth login
+    # Scan QR code with Happy mobile app
+    ```
+  </Accordion>
+
+  <Accordion title="Session Listing">
+    ### `happy-agent list`
+    List all sessions (active and inactive).
+
+    ### `happy-agent list --active`
+    Show only active sessions.
+
+    ### `happy-agent list --json`
+    Output as JSON for scripting.
+
+    ```bash
+    # List all sessions
+    happy-agent list
+
+    # Only active sessions
+    happy-agent list --active
+
+    # JSON output
+    happy-agent list --json
+    ```
+  </Accordion>
+
+  <Accordion title="Session Control">
+    ### `happy-agent status <session-id>`
+    Get live session state and status.
+
+    ### `happy-agent messages <session-id>`
+    View session message history.
+
+    ### `happy-agent send <session-id> <message>`
+    Send a message to the session.
+
+    ```bash
+    # Get session status
+    happy-agent status abc123
+
+    # View messages (last 50)
+    happy-agent messages abc123
+
+    # View more messages
+    happy-agent messages abc123 --limit 100
+
+    # Send a message
+    happy-agent send abc123 "What files did you change?"
+    ```
+  </Accordion>
+
+  <Accordion title="Real-time Monitoring">
+    ### `happy-agent watch <session-id>`
+    Connect to session and stream updates in real-time.
+
+    ```bash
+    # Watch session activity
+    happy-agent watch abc123
+
+    # Cancel with Ctrl+C
+    ```
+
+    Displays:
+    - New messages as they arrive
+    - Agent state changes
+    - Tool executions
+    - Session status updates
+  </Accordion>
+</AccordionGroup>
+
+## Configuration
+
+Configuration stored in `~/.happy-agent/`:
+
+- `config.json` - Server URL and settings
+- `credentials.json` - Authentication token and keys
+
+```json
+// ~/.happy-agent/config.json
+{
+  "serverUrl": "https://api.happy.engineering"
+}
+
+// ~/.happy-agent/credentials.json (encrypted)
+{
+  "token": "jwt-token-here",
+  "publicKey": "base64-encoded-public-key",
+  "secretKey": "base64-encoded-secret-key"
+}
+```
+
+## Core Dependencies
+
+```json
+{
+  "commander": "^13.1.0",
+  "socket.io-client": "^4.8.1",
+  "tweetnacl": "^1.0.3",
+  "axios": "^1.13.2",
+  "chalk": "^5.6.2",
+  "qrcode-terminal": "^0.12.0",
+  "@slopus/happy-wire": "^0.1.0"
+}
+```
+
+Minimal dependencies for fast installation and startup.
+
+## API Client
+
+The agent communicates with the Happy server:
+
+```typescript
+// REST API for session operations
+const sessions = await listSessions(config, credentials)
+const messages = await getSessionMessages(config, credentials, sessionId)
+
+// WebSocket for real-time updates
+const client = new SessionClient({
+  sessionId,
+  encryptionKey,
+  token,
+  serverUrl,
+})
+
+client.on('message', (msg) => {
+  console.log('New message:', msg)
+})
+
+client.on('agentState', (state) => {
+  console.log('Agent state:', state)
+})
+```
+
+## Encryption
+
+All session data is end-to-end encrypted:
+
+- Uses same TweetNaCl encryption as main CLI
+- Session-specific encryption keys
+- Messages encrypted before transmission
+- Agent state encrypted at rest
+
+```typescript
+import { decrypt, encrypt } from './encryption'
+
+// Decrypt session message
+const plaintext = decrypt(
+  encryptedContent,
+  sessionEncryptionKey,
+  'nacl' // encryption variant
+)
+
+// Encrypt outgoing message
+const encrypted = encrypt(
+  messageContent,
+  sessionEncryptionKey,
+  'nacl'
+)
+```
+
+## Output Formatting
+
+### Session Table
+
+```
+ID       TITLE              MACHINE    STATUS    CREATED
+abc123   Fix bug #42        MacBook    active    2h ago
+def456   Add feature        Desktop    idle      1d ago
+```
+
+### Message History
+
+```
+[14:23:45] user: What files did you change?
+[14:23:47] assistant: I modified three files:
+           - src/main.ts
+           - tests/main.test.ts
+           - package.json
+[14:23:50] tool_use: read_file src/main.ts
+```
+
+### JSON Output
+
+```bash
+happy-agent list --json | jq '.[] | select(.status == "active")'
+```
+
+## Use Cases
+
+### Monitor from Another Machine
+
+```bash
+# On your laptop
+happy  # Start session on desktop
+
+# On your phone or another computer
+happy-agent list  # See all sessions
+happy-agent watch abc123  # Monitor the session
+```
+
+### Scripting and Automation
+
+```bash
+#!/bin/bash
+# Check if any sessions are running
+ACTIVE=$(happy-agent list --active --json | jq 'length')
+
+if [ "$ACTIVE" -gt 0 ]; then
+  echo "⚠️  $ACTIVE active AI sessions running"
+  happy-agent list --active
+fi
+```
+
+### Remote Session Control
+
+```bash
+# Send commands to a running session
+happy-agent send abc123 "Show me the git diff"
+happy-agent send abc123 "Run the tests"
+```
+
+## Scripts
+
+```json
+{
+  "dev": "tsx src/index.ts",
+  "build": "shx rm -rf dist && tsc --noEmit && pkgroll",
+  "test": "yarn build && vitest run",
+  "typecheck": "tsc --noEmit"
+}
+```
+
+## Authentication Flow
+
+1. Run `happy-agent auth login`
+2. Terminal displays QR code
+3. Scan QR code with Happy mobile app
+4. Mobile app signs challenge
+5. Agent receives token and stores credentials
+6. All subsequent commands use stored token
+
+```bash
+happy-agent auth login
+# ┌─────────────────┐
+# │ █▀▀▀▀▀█ █▀ █▀▀▀│  Scan with Happy app
+# │ █ ███ █ ▄▀ ▄▀██│  to authenticate
+# │ █ ▀▀▀ █ ██ ▀█▀▀│
+# └─────────────────┘
+```
+
+## Session State
+
+The agent can display live session state:
+
+```typescript
+interface SessionState {
+  status: 'active' | 'idle' | 'error'
+  currentTool?: string
+  lastActivity: number
+  messageCount: number
+}
+```
+
+## Related Components
+
+- [CLI](/components/cli) - Main Happy CLI with daemon
+- [Server](/components/server) - Backend API server
+- [Mobile App](/components/mobile-app) - Mobile control interface

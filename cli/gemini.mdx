@@ -1,0 +1,373 @@
+---
+title: happy gemini
+description: Start Gemini agent powered by Google AI models
+icon: sparkles
+---
+
+The `happy gemini` command starts a Gemini-powered AI agent using Google's Gemini models for coding assistance and task automation.
+
+## Syntax
+
+```bash
+happy gemini [options]
+happy gemini model <subcommand>
+happy gemini project <subcommand>
+```
+
+## Description
+
+Gemini provides AI-powered coding assistance using Google's advanced language models. Features include:
+- Code generation and refactoring
+- Natural language task execution
+- Mobile control and remote sessions
+- Google Workspace integration
+- Configurable models and projects
+
+<Note>
+  You need to authenticate with Google first using `happy connect gemini`.
+</Note>
+
+## Commands
+
+### Start Gemini Agent
+
+```bash
+happy gemini [options]
+```
+
+Starts an interactive Gemini agent session.
+
+<ParamField path="--started-by" type="string">
+  Session origin indicator. Options: `daemon` or `terminal`. Internal use
+</ParamField>
+
+### Model Management
+
+#### Set Model
+
+```bash
+happy gemini model set <model>
+```
+
+Configure which Gemini model to use for future sessions.
+
+<ParamField path="model" type="string" required>
+  Model name to use. Available options:
+  - `gemini-2.5-pro` (default, most capable)
+  - `gemini-2.5-flash` (faster, efficient)
+  - `gemini-2.5-flash-lite` (lightweight)
+</ParamField>
+
+#### Get Model
+
+```bash
+happy gemini model get
+```
+
+Display the currently configured model.
+
+### Project Management
+
+#### Set Google Cloud Project
+
+```bash
+happy gemini project set <project-id>
+```
+
+Configure Google Cloud Project ID for Google Workspace accounts.
+
+<ParamField path="project-id" type="string" required>
+  Your Google Cloud Project ID (required for Workspace accounts)
+</ParamField>
+
+<Warning>
+  Google Workspace accounts require a Google Cloud Project ID. Consumer Gmail accounts do not need this.
+</Warning>
+
+#### Get Project
+
+```bash
+happy gemini project get
+```
+
+Display the currently configured Google Cloud Project ID.
+
+## Setup
+
+### 1. Connect Google Account
+
+```bash
+happy connect gemini
+```
+
+This initiates OAuth authentication with Google and securely stores your credentials.
+
+### 2. Configure Model (Optional)
+
+```bash
+happy gemini model set gemini-2.5-flash
+```
+
+Set your preferred model. Defaults to `gemini-2.5-pro` if not configured.
+
+### 3. Set Project ID (Workspace Only)
+
+If you're using a Google Workspace account:
+
+```bash
+happy gemini project set your-project-id
+```
+
+<Note>
+  Find your project ID in the [Google Cloud Console](https://console.cloud.google.com). See the [Workspace authentication guide](https://goo.gle/gemini-cli-auth-docs#workspace-gca) for details.
+</Note>
+
+## Examples
+
+### Start Gemini Session
+
+```bash
+happy gemini
+```
+
+Launches Gemini with your configured settings.
+
+### Configure Model
+
+<CodeGroup>
+```bash Set to Flash (Faster)
+happy gemini model set gemini-2.5-flash
+```
+
+```bash Set to Pro (Most Capable)
+happy gemini model set gemini-2.5-pro
+```
+
+```bash Check Current Model
+happy gemini model get
+```
+</CodeGroup>
+
+### Setup for Workspace Account
+
+```bash
+# 1. Connect account
+happy connect gemini
+
+# 2. Set your GCP project
+happy gemini project set my-workspace-project
+
+# 3. Verify configuration
+happy gemini project get
+
+# 4. Start Gemini
+happy gemini
+```
+
+### Check Configuration
+
+```bash
+happy gemini model get
+```
+
+Output:
+```
+Current model: gemini-2.5-flash
+```
+
+```bash
+happy gemini project get
+```
+
+Output:
+```
+Current Google Cloud Project: my-project-123
+  Linked to account: user@company.com
+```
+
+## Output
+
+When you start Gemini, you'll see an interactive terminal interface:
+
+```
+Starting Gemini agent...
+
+[Gemini Display]
+╭─ Messages ─────────────────────────────────────╮
+│                                                 │
+│ User: Write a Python script to process CSV     │
+│ Assistant: I'll create that script for you...   │
+│                                                 │
+╰─────────────────────────────────────────────────╯
+
+Model: gemini-2.5-pro
+Status: Ready
+```
+
+## Configuration Files
+
+### Model Configuration
+
+Model settings are stored in:
+- `~/.gemini/config.json`
+- `~/.config/gemini/config.json` (alternative location)
+
+```json
+{
+  "model": "gemini-2.5-flash"
+}
+```
+
+### Project Configuration
+
+Google Cloud Project settings:
+
+```json
+{
+  "googleCloudProject": "my-project-123",
+  "googleCloudProjectEmail": "user@company.com"
+}
+```
+
+### OAuth Credentials
+
+Google OAuth tokens are stored in:
+- `~/.gemini/oauth_creds.json`
+
+These are automatically managed by `happy connect gemini`.
+
+## Environment Variables
+
+<ParamField path="GEMINI_MODEL" type="string">
+  Override the model configuration
+
+  ```bash
+  GEMINI_MODEL=gemini-2.5-flash happy gemini
+  ```
+</ParamField>
+
+<ParamField path="GOOGLE_CLOUD_PROJECT" type="string">
+  Override the project configuration
+
+  ```bash
+  GOOGLE_CLOUD_PROJECT=my-project happy gemini
+  ```
+</ParamField>
+
+## Features
+
+### Permission Modes
+
+Gemini supports the same permission modes as other agents:
+- **default**: Ask before executing
+- **effective**: Auto-approve safe operations
+- **bypassPermissions**: Auto-approve all
+
+### Reasoning Display
+
+Gemini shows its thought process:
+
+```
+[Thinking] Analyzing the requirements...
+[Tool] Running: cat example.py
+[Result] File contents retrieved
+```
+
+### Diff Tracking
+
+File modifications are tracked and displayed:
+
+```diff
+--- example.py
++++ example.py
+@@ -1,3 +1,4 @@
+ import sys
++import json
+ 
+ def main():
+```
+
+### Session Resume
+
+Gemini automatically maintains conversation context across turns.
+
+## Troubleshooting
+
+### Authentication Required Error
+
+If you see "Authentication required":
+
+```bash
+# For Workspace accounts, set project ID
+happy gemini project set your-project-id
+
+# Re-authenticate
+happy connect gemini
+```
+
+See the [Workspace setup guide](https://goo.gle/gemini-cli-auth-docs#workspace-gca).
+
+### Invalid Model Error
+
+If you specify an invalid model:
+
+```bash
+happy gemini model set invalid-model
+```
+
+Output:
+```
+Invalid model: invalid-model
+Available models: gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite
+```
+
+### Connection Status
+
+Check if Gemini is properly connected:
+
+```bash
+happy connect status
+```
+
+Output:
+```
+  ✓  Google Gemini: connected (user@example.com)
+```
+
+### Token Expired
+
+If your OAuth token expires:
+
+```bash
+happy connect gemini
+```
+
+Re-authenticate to refresh the token.
+
+### View Logs
+
+```bash
+happy doctor
+```
+
+Check logs in `~/.happy/logs/` for detailed error information.
+
+## Model Comparison
+
+| Model | Speed | Capability | Best For |
+|-------|-------|------------|----------|
+| gemini-2.5-pro | Slower | Highest | Complex tasks, reasoning |
+| gemini-2.5-flash | Fast | High | Most coding tasks |
+| gemini-2.5-flash-lite | Fastest | Good | Simple queries, quick edits |
+
+## Related Commands
+
+- [happy connect](/cli/connect) - Connect Google account
+- [happy acp](/cli/acp) - Alternative way to run Gemini
+- [happy codex](/cli/codex) - OpenAI-powered agent
+- [happy sandbox](/cli/sandbox) - Configure sandboxing
+- [happy doctor](/cli/doctor) - System diagnostics
+
+<Note>
+  Gemini uses your Google account for authentication. Usage may be subject to Google's API quotas and pricing.
+</Note>

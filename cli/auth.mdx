@@ -1,0 +1,338 @@
+---
+title: 'happy auth'
+description: 'Manage Happy CLI authentication and machine registration'
+icon: 'key'
+---
+
+The `happy auth` command manages authentication with Happy cloud services and registers your machine for remote sessions.
+
+## Syntax
+
+```bash
+happy auth <subcommand>
+```
+
+## Subcommands
+
+### login
+
+Authenticate with Happy and register your machine.
+
+```bash
+happy auth login [--force]
+```
+
+<ParamField path="--force" type="flag">
+  Force re-authentication by clearing existing credentials, machine ID, and stopping the daemon before re-authenticating
+</ParamField>
+
+### logout
+
+Remove all authentication data and machine registration.
+
+```bash
+happy auth logout
+```
+
+<Warning>
+  This will permanently delete all local Happy data including credentials, session history, and configuration. You'll need to re-authenticate to use Happy again.
+</Warning>
+
+### status
+
+Display current authentication status and machine information.
+
+```bash
+happy auth status
+```
+
+## Description
+
+Happy uses a secure authentication system where:
+- Your master secret never leaves your mobile/web device
+- Each CLI machine receives a derived key for per-machine encryption
+- All communication is end-to-end encrypted
+- Backup codes cannot be displayed from the CLI (only from mobile/web)
+
+## Examples
+
+### First-Time Authentication
+
+```bash
+happy auth login
+```
+
+Output:
+```
+Scanning for QR code...
+
+[QR Code displayed]
+
+Scan this QR code with the Happy mobile app to authenticate.
+Waiting for authentication...
+
+✓ Authentication successful
+  Machine ID: abc-123-def-456
+```
+
+### Check Authentication Status
+
+```bash
+happy auth status
+```
+
+Output when authenticated:
+```
+Authentication Status
+
+✓ Authenticated
+  Token: eyJhbGciOiJIUzI1NiIsInR5cCI6...
+✓ Machine registered
+  Machine ID: abc-123-def-456
+  Host: macbook-pro.local
+
+✓ Daemon running
+
+  Data directory: /Users/username/.happy
+```
+
+Output when not authenticated:
+```
+Authentication Status
+
+✗ Not authenticated
+  Run "happy auth login" to authenticate
+```
+
+### Force Re-authentication
+
+```bash
+happy auth login --force
+```
+
+Output:
+```
+Force authentication requested.
+This will:
+  • Clear existing credentials
+  • Clear machine ID
+  • Stop daemon if running
+  • Re-authenticate and register machine
+
+✓ Stopped daemon
+✓ Cleared credentials
+✓ Cleared machine ID
+
+[QR Code displayed]
+
+Scan this QR code with the Happy mobile app...
+
+✓ Authentication successful
+  Machine ID: xyz-789-new-012
+```
+
+### Logout
+
+```bash
+happy auth logout
+```
+
+Output:
+```
+This will log you out of Happy
+⚠️  You will need to re-authenticate to use Happy again
+Are you sure you want to log out? (y/N): y
+
+Stopped daemon
+✓ Successfully logged out
+  Run "happy auth login" to authenticate again
+```
+
+## Authentication Flow
+
+### Initial Setup
+
+1. **Generate Keys**: Happy generates a keypair on your CLI machine
+2. **Display QR Code**: A QR code with authentication challenge is shown
+3. **Scan with Mobile**: Use the Happy mobile app to scan the QR code
+4. **Approve on Mobile**: Approve the machine registration on your mobile device
+5. **Receive Token**: CLI receives encrypted authentication token
+6. **Register Machine**: Machine is registered with Happy cloud
+7. **Store Locally**: Credentials are securely stored in `~/.happy/`
+
+### Security Model
+
+<Note>
+  Your master secret is stored only on your mobile/web device. Each CLI machine receives a unique derived key that cannot access your master secret or other machines' keys.
+</Note>
+
+Key features:
+- **End-to-end encryption**: All communication encrypted with TweetNaCl
+- **Per-machine keys**: Each machine has isolated credentials
+- **Challenge-response**: Prevents replay attacks
+- **Secure storage**: Keys stored with restricted file permissions
+
+## Credential Storage
+
+### Location
+
+Credentials are stored in:
+- **Production**: `~/.happy/access.key`
+- **Development**: `~/.happy-dev/access.key`
+
+Settings and machine ID:
+- **Production**: `~/.happy/settings.json`
+- **Development**: `~/.happy-dev/settings.json`
+
+### File Permissions
+
+Credential files are created with restricted permissions (600) for security:
+
+```bash
+-rw------- 1 user staff access.key
+-rw------- 1 user staff settings.json
+```
+
+### Contents
+
+The `access.key` file contains:
+- Authentication token from Happy cloud
+- Encrypted keypair for secure communication
+
+The `settings.json` file contains:
+- Machine ID
+- Sandbox configuration
+- Chrome mode settings
+- Other preferences
+
+## Troubleshooting
+
+### QR Code Not Scanning
+
+If the QR code doesn't scan:
+
+1. Ensure good lighting
+2. Try maximizing your terminal window
+3. Use the mobile app's manual entry option
+4. Check that mobile app is up to date
+
+### Authentication Timeout
+
+If authentication times out:
+
+```bash
+# Try again
+happy auth login
+
+# If persistent, force re-authentication
+happy auth login --force
+```
+
+### Machine Already Registered
+
+If you see "Already authenticated":
+
+```bash
+# Check current status
+happy auth status
+
+# Force re-register if needed
+happy auth login --force
+```
+
+### Credentials But No Machine ID
+
+If you have credentials but no machine ID:
+
+```bash
+happy auth login
+```
+
+This will detect the issue and automatically register your machine without clearing credentials.
+
+### Daemon Issues
+
+If the daemon doesn't stop during re-authentication:
+
+```bash
+# Manually stop daemon
+happy daemon stop
+
+# Then login
+happy auth login --force
+```
+
+### Can't Connect to Server
+
+If authentication fails with network errors:
+
+```bash
+# Check server URL
+echo $HAPPY_SERVER_URL
+
+# Run diagnostics
+happy doctor
+
+# Try with custom server (development)
+HAPPY_SERVER_URL=https://api.happy-servers.com happy auth login
+```
+
+## Multiple Machines
+
+You can authenticate Happy on multiple machines:
+
+1. Run `happy auth login` on each machine
+2. Scan the QR code on each machine separately
+3. Each machine gets a unique machine ID
+4. All machines share the same user account
+5. Control any machine from the mobile app
+
+### Listing Machines
+
+View all registered machines in the Happy mobile app:
+1. Open Settings
+2. Tap "Machines"
+3. See all registered machines and their status
+
+### Removing Machines
+
+To remove a machine:
+
+```bash
+# On the machine to remove
+happy auth logout
+```
+
+Or from the mobile app:
+1. Open Settings → Machines
+2. Swipe left on the machine
+3. Tap "Remove"
+
+## Environment Variables
+
+<ParamField path="HAPPY_SERVER_URL" type="string">
+  Override the Happy server URL (for development/testing)
+
+  ```bash
+  HAPPY_SERVER_URL=http://localhost:3005 happy auth login
+  ```
+</ParamField>
+
+<ParamField path="HAPPY_HOME_DIR" type="string">
+  Override the Happy data directory location
+
+  ```bash
+  HAPPY_HOME_DIR=/custom/path happy auth login
+  ```
+</ParamField>
+
+## Related Commands
+
+- [happy](/cli/happy) - Start Claude Code sessions
+- [happy daemon](/cli/daemon) - Manage background daemon
+- [happy connect](/cli/connect) - Connect AI vendor API keys
+- [happy doctor](/cli/doctor) - System diagnostics
+
+<Note>
+  You must authenticate with `happy auth login` before using any Happy features. This is a one-time setup per machine.
+</Note>

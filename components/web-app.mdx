@@ -1,0 +1,259 @@
+---
+title: "Web App"
+description: "Browser-based version of the Happy mobile app"
+icon: "globe"
+---
+
+The Happy web app is the browser-based version of the mobile app, sharing the same React Native codebase through React Native Web. It provides full remote control capabilities for AI coding sessions directly in the browser.
+
+## Overview
+
+The web app enables users to:
+
+- Access Happy from any browser without installation
+- Control AI coding sessions remotely
+- Monitor real-time session activity
+- Manage machines and sessions
+- Use most mobile features in the browser
+
+<Note>
+  The web app is considered a **secondary platform** compared to native mobile. Some features may have limitations or different behavior.
+</Note>
+
+## Shared Codebase
+
+The web app uses the **exact same source code** as the mobile app (`packages/happy-app/`), leveraging React Native Web for browser compatibility:
+
+<CardGroup cols={2}>
+  <Card title="Same Package" icon="code-branch">
+    Both mobile and web use `packages/happy-app/` - no separate codebase
+  </Card>
+  <Card title="React Native Web" icon="react">
+    Automatically transpiles React Native components to web-compatible code
+  </Card>
+  <Card title="Shared Architecture" icon="diagram-project">
+    Same sync engine, encryption, state management, and routing
+  </Card>
+  <Card title="Platform Detection" icon="mobile-screen">
+    Conditional logic via `Platform.OS === 'web'` when needed
+  </Card>
+</CardGroup>
+
+## How It Works
+
+The web app is built from the same React Native source:
+
+1. **Expo Web**: Uses Expo's web support via `expo start --web`
+2. **React Native Web**: Translates React Native primitives (`View`, `Text`, etc.) to HTML/CSS
+3. **Platform-specific code**: Components check `Platform.OS` for web-specific behavior
+4. **Same dependencies**: Uses browser-compatible versions of native modules
+
+```typescript
+import { Platform } from 'react-native'
+
+// Platform-specific behavior
+if (Platform.OS === 'web') {
+  // Web-specific implementation
+} else {
+  // Native mobile implementation
+}
+```
+
+## Running the Web App
+
+<CodeGroup>
+```bash Development
+# Start development server
+yarn web:test
+# or
+cross-env APP_ENV=development expo start --web --non-interactive
+```
+
+```bash Production Build
+# Build for production
+EXPO_PUBLIC_ENV=production expo export:web
+```
+</CodeGroup>
+
+## Key Differences from Mobile
+
+### Supported Features
+
+✅ Session control and monitoring
+✅ Real-time message sync
+✅ End-to-end encryption
+✅ Machine management
+✅ QR code scanning (via browser camera)
+✅ Voice communication (browser WebRTC)
+
+### Limited Features
+
+⚠️ Push notifications (browser notifications instead)
+⚠️ Background operation (limited by browser lifecycle)
+⚠️ Biometric authentication (browser-dependent)
+⚠️ Native modules (web equivalents used)
+
+### Platform-Specific Implementations
+
+Some features use web-specific implementations:
+
+- **Camera**: Browser `getUserMedia` API instead of expo-camera
+- **Storage**: Browser localStorage/IndexedDB instead of MMKV
+- **Notifications**: Browser Notification API instead of native push
+- **Audio**: Web Audio API instead of native audio modules
+
+## Architecture
+
+The web app shares all core architecture from the mobile app:
+
+- **Routing**: Same Expo Router file-based navigation
+- **Sync**: Identical WebSocket sync engine and encryption
+- **State**: Same React Context and reducers
+- **Components**: Same UI components (styled with Unistyles)
+
+<Accordion title="Shared Components">
+  All components in `sources/components/` work on both mobile and web:
+  - Authentication screens
+  - Session views
+  - Message displays
+  - Settings UI
+  - Machine management
+</Accordion>
+
+## Styling
+
+Web app uses Unistyles for responsive, theme-aware styling:
+
+```typescript
+import { StyleSheet, useStyles } from 'react-native-unistyles'
+
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    padding: theme.margins.md,
+    backgroundColor: theme.colors.background,
+  }
+}))
+
+// Automatically adapts to web breakpoints
+const { styles: webStyles } = useStyles(styles)
+```
+
+Breakpoints adjust for desktop browsers automatically:
+- Mobile: < 768px
+- Tablet: 768px - 1024px
+- Desktop: > 1024px
+
+## Deployment
+
+The web app is deployed to **app.happy.engineering**:
+
+1. Build with `expo export:web`
+2. Static files generated in `dist/`
+3. Deployed to hosting provider (Vercel/Netlify/etc.)
+
+<Note>
+  The web app connects to the same backend server as mobile apps, ensuring consistent data and session state.
+</Note>
+
+## Browser Support
+
+Tested on modern browsers:
+
+- ✅ Chrome 90+
+- ✅ Safari 14+
+- ✅ Firefox 88+
+- ✅ Edge 90+
+
+Requires:
+- WebSocket support
+- WebRTC (for voice)
+- Camera access (for QR scanning)
+- Local storage
+
+## Desktop Version (Tauri)
+
+In addition to the browser-based web app, Happy also provides a native macOS desktop app using Tauri:
+
+<CodeGroup>
+```bash Development
+yarn tauri:dev
+```
+
+```bash Production Build
+yarn tauri:build:production
+```
+</CodeGroup>
+
+The Tauri desktop app provides:
+- Native macOS application
+- Better system integration
+- Improved performance
+- Native menu bar integration
+
+## Environment Configuration
+
+Web app uses same environment variants as mobile:
+
+- **Development**: Local server, debug logging
+- **Preview**: Staging environment
+- **Production**: Production API servers
+
+Set via `APP_ENV` or `EXPO_PUBLIC_ENV` environment variables.
+
+## Development Guidelines
+
+### Adding Web-Specific Code
+
+Only add platform checks when absolutely necessary:
+
+```typescript
+import { Platform } from 'react-native'
+
+// ✅ Good: Handle actual platform differences
+if (Platform.OS === 'web') {
+  // Use browser API
+  navigator.clipboard.writeText(text)
+} else {
+  // Use native module
+  await Clipboard.setStringAsync(text)
+}
+
+// ❌ Bad: Avoid unnecessary platform checks
+if (Platform.OS === 'web') {
+  // Style override - use Unistyles breakpoints instead
+}
+```
+
+### Testing Web-Specific Changes
+
+Always test both mobile and web when changing shared code:
+
+```bash
+# Test mobile
+yarn ios
+
+# Test web
+yarn web:test
+
+# Ensure no regressions
+yarn typecheck
+```
+
+## Limitations
+
+<Warning>
+  The web app is a secondary platform. Prioritize mobile when making architectural decisions. Avoid web-specific implementations unless explicitly requested.
+</Warning>
+
+Known limitations:
+- Limited background operation
+- Browser lifecycle restrictions
+- No native modules
+- Camera/microphone requires user permission on every session
+- Service workers not currently implemented
+
+## Related Components
+
+- [Mobile App](/components/mobile-app) - Full mobile app documentation
+- [Server](/components/server) - Backend API server
+- [CLI](/components/cli) - Command-line daemon

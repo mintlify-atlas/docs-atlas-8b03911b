@@ -1,0 +1,230 @@
+---
+title: Development Setup
+description: Set up your local development environment for Happy Development
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+### Required Software
+
+- **Node.js 20 or later** - JavaScript runtime
+- **Yarn 1.22.22** - Package manager (not npm)
+- **Git** - Version control
+
+### Platform-Specific Requirements
+
+#### For Mobile Development (happy-app)
+- **Expo CLI** - Installed automatically with dependencies
+- **iOS Development**:
+  - macOS with Xcode 15+
+  - iOS Simulator or physical device
+- **Android Development**:
+  - Android Studio
+  - Android SDK and emulator
+
+#### For Server Development (happy-server)
+- **PostgreSQL** - Database (can use Docker)
+- **Redis** - Cache and pub/sub (can use Docker)
+- **FFmpeg** - Media processing
+- **Python 3** - Required by some dependencies
+- **Docker** (optional) - For running services locally
+
+## Installation Steps
+
+<Steps>
+
+### Clone the repository
+
+```bash
+git clone https://github.com/slopus/happy.git
+cd happy
+```
+
+### Install dependencies
+
+From the repository root, install all workspace dependencies:
+
+```bash
+yarn install
+```
+
+This will install dependencies for all packages in the monorepo.
+
+### Set up environment variables
+
+#### For happy-cli
+
+Create environment files for local development:
+
+```bash
+cd packages/happy-cli
+cp .env.example .env.dev-local-server  # if example exists
+```
+
+Set `HAPPY_SERVER_URL` to your local server:
+
+```bash
+HAPPY_SERVER_URL=http://localhost:3005
+HAPPY_HOME_DIR=~/.happy-dev
+```
+
+#### For happy-server
+
+```bash
+cd packages/happy-server
+cp .env.example .env.dev  # if example exists
+```
+
+Configure your database and Redis connections in `.env.dev`.
+
+### Generate Prisma client
+
+For the server package:
+
+```bash
+cd packages/happy-server
+yarn generate
+```
+
+### Run database migrations
+
+Set up the database schema:
+
+```bash
+cd packages/happy-server
+yarn migrate
+```
+
+### Start local services (optional)
+
+If using Docker for development services:
+
+```bash
+# PostgreSQL
+cd packages/happy-server
+yarn db
+
+# Redis
+yarn redis
+
+# MinIO (S3-compatible storage)
+yarn s3
+yarn s3:init
+```
+
+</Steps>
+
+## Verify Installation
+
+Test that everything is set up correctly:
+
+### Test CLI
+
+```bash
+yarn cli --help
+```
+
+### Test Server
+
+```bash
+cd packages/happy-server
+yarn dev
+```
+
+The server should start on `http://localhost:3005`.
+
+### Test Mobile App
+
+```bash
+cd packages/happy-app
+yarn start
+```
+
+This starts the Expo development server. You can then:
+- Press `i` for iOS simulator
+- Press `a` for Android emulator
+- Press `w` for web browser
+
+## Development Variants
+
+The CLI supports running development and stable versions side-by-side:
+
+```bash
+# Development variant (uses ~/.happy-dev)
+yarn dev:variant
+
+# Stable variant (uses ~/.happy)
+yarn stable
+```
+
+## IDE Setup
+
+### VS Code (Recommended)
+
+The project includes VS Code workspace configurations in `.vscode` directories within each package. Install recommended extensions:
+
+- ESLint
+- TypeScript
+- Prettier (if used)
+
+### TypeScript
+
+All packages use TypeScript 5.9.3 with strict mode enabled. Run type checking:
+
+```bash
+# From any package directory
+yarn typecheck
+```
+
+## Troubleshooting
+
+### Port conflicts
+
+If port 3005 is in use, the server dev script will attempt to kill the process:
+
+```bash
+lsof -ti tcp:3005 | xargs kill -9
+```
+
+### Prisma issues
+
+Regenerate Prisma client:
+
+```bash
+cd packages/happy-server
+yarn generate
+```
+
+Reset database:
+
+```bash
+yarn migrate:reset
+```
+
+### Yarn workspace issues
+
+If you encounter workspace-related errors, try:
+
+```bash
+# From repository root
+rm -rf node_modules
+rm -rf packages/*/node_modules
+yarn install
+```
+
+### Happy CLI daemon issues
+
+Run the doctor command:
+
+```bash
+cd packages/happy-cli
+yarn doctor
+```
+
+## Next Steps
+
+- Review the [Project Structure](/development/project-structure) to understand the codebase
+- Learn how to [build the project](/development/building)
+- Set up [testing](/development/testing) in your workflow

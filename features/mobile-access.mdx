@@ -1,0 +1,197 @@
+---
+title: Mobile Access
+description: Use Claude Code and Codex from anywhere with iOS, Android, and Web apps
+---
+
+Happy provides full mobile access to your Claude Code and Codex sessions through native iOS and Android apps, plus a web interface. Monitor your AI coding sessions from anywhere, whether you're away from your desk or on the go.
+
+## Supported Platforms
+
+Happy runs on multiple platforms to give you flexibility in how you work:
+
+### iOS App
+
+Native iOS application available on the App Store:
+- iPhone and iPad support
+- Optimized for iOS 14+
+- Native performance and UI
+- Full feature parity with desktop
+
+<Card title="Download on App Store" icon="apple" href="https://apps.apple.com/us/app/happy-claude-code-client/id6748571505">
+  Get the official Happy app for iPhone and iPad
+</Card>
+
+### Android App
+
+Native Android application available on Google Play:
+- Phone and tablet support
+- Material Design UI
+- Optimized for Android 8.0+
+- Complete mobile experience
+
+<Card title="Download on Google Play" icon="android" href="https://play.google.com/store/apps/details?id=com.ex3ndr.happy">
+  Get the official Happy app for Android devices
+</Card>
+
+### Web App
+
+Full-featured web application accessible from any browser:
+- No installation required
+- Works on desktop and mobile browsers
+- Same functionality as native apps
+- Perfect for quick access from any device
+
+<Card title="Open Web App" icon="globe" href="https://app.happy.engineering">
+  Use Happy directly in your browser
+</Card>
+
+## Technical Architecture
+
+The mobile apps are built using modern cross-platform technologies:
+
+### React Native with Expo
+
+The iOS and Android apps share a common codebase built with:
+- **React Native 0.81** for native performance
+- **Expo SDK 54** for streamlined development
+- **TypeScript** for type safety
+- **Expo Router v6** for file-based navigation
+
+```typescript
+// Platform detection example from the source
+import { Platform } from 'react-native';
+
+if (Platform.OS === 'ios') {
+  // iOS-specific code
+} else if (Platform.OS === 'android') {
+  // Android-specific code
+} else if (Platform.OS === 'web') {
+  // Web-specific code
+}
+```
+
+### Cross-Platform UI
+
+The app uses **Unistyles** for consistent styling across all platforms with:
+- Theme support (light/dark modes)
+- Responsive breakpoints
+- Platform-specific adaptations
+- Native-like components
+
+### Real-Time Sync
+
+All platforms connect to the Happy server using:
+- **Socket.io** for WebSocket-based real-time communication
+- Automatic reconnection handling
+- End-to-end encryption for all data
+- Offline support with queue management
+
+## Features Across Platforms
+
+All platforms provide the same core functionality:
+
+<CardGroup cols={2}>
+  <Card title="Session Monitoring" icon="display">
+    View Claude Code output and progress in real-time
+  </Card>
+  <Card title="Remote Control" icon="mobile">
+    Take control of sessions from your mobile device
+  </Card>
+  <Card title="Push Notifications" icon="bell">
+    Get alerted when Claude needs input or encounters errors
+  </Card>
+  <Card title="Device Switching" icon="arrows-rotate">
+    Seamlessly switch between desktop and mobile
+  </Card>
+</CardGroup>
+
+## Authentication Flow
+
+Happy uses QR code-based authentication for secure, passwordless login:
+
+1. **CLI generates QR code**: Run `happy` on your computer
+2. **Scan with mobile app**: Use the built-in QR scanner
+3. **Secure handshake**: Challenge-response mechanism using TweetNaCl
+4. **Instant access**: No passwords, no email verification needed
+
+```typescript
+// Authentication flow from the mobile app
+import { authGetToken } from '@/auth/authGetToken';
+import { encodeBase64 } from '@/encryption/base64';
+import { getRandomBytesAsync } from 'expo-crypto';
+
+const createAccount = async () => {
+  // Generate cryptographic secret
+  const secret = await getRandomBytesAsync(32);
+  
+  // Get authentication token
+  const token = await authGetToken(secret);
+  
+  if (token && secret) {
+    // Store credentials securely
+    await auth.login(token, encodeBase64(secret, 'base64url'));
+  }
+};
+```
+
+## Platform-Specific Optimizations
+
+### iOS
+- Native iOS design patterns
+- Haptic feedback integration
+- iOS share sheet support
+- Background refresh capabilities
+
+### Android
+- Material Design 3 components
+- Android system integration
+- Adaptive icons
+- Edge-to-edge display support
+
+### Web
+- Progressive Web App (PWA) support
+- Responsive design for all screen sizes
+- Keyboard shortcuts
+- Desktop-class experience
+
+## Development & Customization
+
+The mobile app is open source and built with modern development tools:
+
+```bash
+# Run development server
+yarn start
+
+# Run on iOS simulator
+yarn ios
+
+# Run on Android emulator
+yarn android
+
+# Run in web browser
+yarn web
+
+# Type checking
+yarn typecheck
+```
+
+<Note>
+  The web platform is considered secondary. Core features work across all platforms, but some mobile-specific features may have limited support on web.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Push Notifications" icon="bell" href="/features/push-notifications">
+    Learn how to get notified about important events
+  </Card>
+  <Card title="Device Switching" icon="arrows-rotate" href="/features/device-switching">
+    Master seamless transitions between devices
+  </Card>
+  <Card title="Voice Control" icon="microphone" href="/features/voice-control">
+    Control Claude with voice commands
+  </Card>
+  <Card title="Encryption" icon="lock" href="/features/encryption">
+    Understand how your data stays secure
+  </Card>
+</CardGroup>

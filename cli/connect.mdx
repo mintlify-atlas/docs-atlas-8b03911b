@@ -1,0 +1,401 @@
+---
+title: 'happy connect'
+description: 'Connect AI vendor API keys to Happy cloud'
+icon: 'plug-circle-bolt'
+---
+
+The `happy connect` command securely stores your AI vendor API keys in Happy cloud, enabling you to use AI services through Happy without exposing keys locally.
+
+## Syntax
+
+```bash
+happy connect <vendor>
+happy connect status
+```
+
+## Subcommands
+
+### codex
+
+Connect your OpenAI account for Codex agent.
+
+```bash
+happy connect codex
+```
+
+Initiates OAuth flow to authenticate with OpenAI and store your API credentials securely.
+
+### claude
+
+Connect your Anthropic account for enhanced Claude features.
+
+```bash
+happy connect claude
+```
+
+Authenticate with Anthropic to enable cloud-based Claude features.
+
+### gemini
+
+Connect your Google account for Gemini agent.
+
+```bash
+happy connect gemini
+```
+
+Initiates OAuth flow with Google to authenticate and store Gemini credentials.
+
+### status
+
+Show connection status for all AI vendors.
+
+```bash
+happy connect status
+```
+
+Displays which vendors are connected and token status.
+
+## Description
+
+The `connect` command provides secure OAuth-based authentication for AI vendors. Benefits include:
+- **Secure storage**: API keys encrypted in Happy cloud
+- **OAuth flow**: No manual API key copying
+- **Multi-device**: Use same credentials across all your machines
+- **Token refresh**: Automatic token refresh when needed
+- **Easy management**: View and manage connections from mobile app
+
+<Note>
+  You must authenticate with Happy first using `happy auth login` before connecting AI vendors.
+</Note>
+
+## Examples
+
+### Connect OpenAI (Codex)
+
+```bash
+happy connect codex
+```
+
+Output:
+```
+🔌 Connecting OpenAI to Happy cloud
+
+🚀 Registering Codex token with server
+[Opens browser for OAuth]
+✅ Codex token registered with server
+```
+
+Follow the OAuth flow in your browser:
+1. Approve Happy's access to OpenAI
+2. Return to terminal
+3. Connection confirmed
+
+### Connect Google (Gemini)
+
+```bash
+happy connect gemini
+```
+
+Output:
+```
+🔌 Connecting Gemini to Happy cloud
+
+🚀 Registering Gemini token with server
+[Opens browser for OAuth]
+✅ Gemini token registered with server
+  Updated local credentials: /Users/username/.gemini/oauth_creds.json
+```
+
+<Note>
+  Gemini also updates your local `~/.gemini/oauth_creds.json` file to keep tokens in sync.
+</Note>
+
+### Connect Anthropic (Claude)
+
+```bash
+happy connect claude
+```
+
+Output:
+```
+🔌 Connecting Anthropic to Happy cloud
+
+🚀 Registering Anthropic token with server
+[Opens browser for OAuth]
+✅ Anthropic token registered with server
+```
+
+### Check Connection Status
+
+```bash
+happy connect status
+```
+
+Output:
+```
+🔌 Connection Status
+
+  ✓  Google Gemini: connected (user@example.com)
+  ✓  OpenAI Codex: connected (user@example.com)
+  ○  Anthropic Claude: not connected
+
+To connect a vendor, run: happy connect <vendor>
+Example: happy connect claude
+```
+
+## OAuth Flow
+
+### Connection Process
+
+1. **Initiate**: Run `happy connect <vendor>`
+2. **Browser Opens**: OAuth consent page opens in your default browser
+3. **Authorize**: Approve Happy's access to the AI service
+4. **Token Exchange**: OAuth tokens securely transferred to Happy cloud
+5. **Encryption**: Tokens encrypted and stored
+6. **Confirmation**: Terminal confirms successful connection
+
+### What Happens Behind the Scenes
+
+<CodeGroup>
+```typescript Token Storage
+// Token is encrypted before storage
+const encrypted = encrypt(oauthToken, userKey)
+await api.registerVendorToken('gemini', { 
+  oauth: encrypted 
+})
+```
+
+```typescript Token Retrieval
+// Token is decrypted when needed
+const encrypted = await api.getVendorToken('gemini')
+const token = decrypt(encrypted.oauth, userKey)
+```
+</CodeGroup>
+
+## Token Management
+
+### Token Expiration
+
+OAuth tokens have limited lifetimes:
+- **Access tokens**: Typically 1 hour
+- **Refresh tokens**: Used to get new access tokens automatically
+- **ID tokens**: Contain user information
+
+Happy automatically refreshes expired tokens when you use the agent.
+
+### Manual Token Refresh
+
+If a token expires:
+
+```bash
+# Re-connect to refresh
+happy connect gemini
+```
+
+The OAuth flow will generate fresh tokens.
+
+### Token Information
+
+Tokens contain:
+- `access_token`: Used for API authentication
+- `refresh_token`: Used to obtain new access tokens
+- `id_token`: JWT containing user email and info
+- `expires_at`: Token expiration timestamp
+- `scope`: Permissions granted
+
+## Vendor-Specific Details
+
+### OpenAI (Codex)
+
+**Required for**: `happy codex`
+
+**Scopes requested**:
+- OpenAI API access
+- User profile information
+
+**Local files**: None (cloud-only)
+
+### Google (Gemini)
+
+**Required for**: `happy gemini`
+
+**Scopes requested**:
+- `https://www.googleapis.com/auth/cloud-platform`
+- User profile and email
+
+**Local files**:
+- `~/.gemini/oauth_creds.json` (synchronized with cloud)
+
+**Additional setup for Workspace**:
+```bash
+# Workspace accounts need a project ID
+happy gemini project set your-project-id
+```
+
+### Anthropic (Claude)
+
+**Required for**: Enhanced Claude features (optional)
+
+**Scopes requested**:
+- Anthropic API access
+- User profile information
+
+**Local files**: None (cloud-only)
+
+<Note>
+  Happy's main `happy` command uses Claude Code which has its own authentication. The `happy connect claude` command is for additional cloud features.
+</Note>
+
+## Security
+
+### Encryption
+
+All vendor tokens are:
+- Encrypted at rest in Happy cloud
+- Encrypted in transit (HTTPS/WSS)
+- Never logged or exposed
+- Accessible only to your authenticated machines
+
+### Access Control
+
+- Tokens can only be accessed by machines you've authenticated
+- Each machine uses its own derived key for encryption
+- Revoking machine access revokes token access
+
+### Token Scope
+
+Tokens are limited to:
+- Specific API operations required by Happy
+- Read-only access where possible
+- User-approved scopes only
+
+## Troubleshooting
+
+### Not Authenticated
+
+If you see "Not authenticated with Happy":
+
+```bash
+happy auth login
+```
+
+Authenticate with Happy before connecting vendors.
+
+### OAuth Flow Fails
+
+If the browser doesn't open or OAuth fails:
+
+1. **Check network**: Ensure you can reach vendor's OAuth servers
+2. **Try again**: Run the connect command again
+3. **Check browser**: Ensure default browser is working
+4. **Firewall**: Check if firewall is blocking OAuth redirect
+
+```bash
+# Retry connection
+happy connect gemini
+```
+
+### Token Expired
+
+If you see "expired" in status:
+
+```bash
+happy connect status
+```
+
+Output:
+```
+  ⚠️  Google Gemini: expired (user@example.com)
+```
+
+Solution:
+```bash
+happy connect gemini
+```
+
+Re-authenticate to refresh the token.
+
+### Workspace Authentication Required
+
+For Google Workspace accounts:
+
+```bash
+# Set project ID first
+happy gemini project set your-project-id
+
+# Then connect
+happy connect gemini
+```
+
+See [Gemini documentation](/cli/gemini) for Workspace setup details.
+
+### Connection Shows But Agent Fails
+
+If `happy connect status` shows connected but agent fails:
+
+```bash
+# Check detailed status
+happy connect status
+
+# Re-authenticate
+happy connect gemini --force  # if --force flag exists
+
+# Or run doctor
+happy doctor
+```
+
+### View Full Error Details
+
+Enable debug mode to see full error messages:
+
+```bash
+DEBUG=* happy connect gemini
+```
+
+Check logs:
+```bash
+tail -f $(ls -t ~/.happy/logs/*.log | head -1)
+```
+
+## Managing Connections
+
+### View from Mobile App
+
+1. Open Happy mobile app
+2. Go to Settings → API Connections
+3. See all connected vendors
+4. Revoke access if needed
+
+### Disconnect/Revoke
+
+To revoke vendor access:
+1. Open Happy mobile app
+2. Go to Settings → API Connections
+3. Tap the vendor
+4. Select "Revoke Access"
+
+Or revoke directly from vendor's website:
+- **Google**: https://myaccount.google.com/permissions
+- **OpenAI**: https://platform.openai.com/account/api-keys
+- **Anthropic**: https://console.anthropic.com/settings/keys
+
+## Environment Variables
+
+<ParamField path="HAPPY_SERVER_URL" type="string">
+  Override Happy server URL for token storage
+
+  ```bash
+  HAPPY_SERVER_URL=http://localhost:3005 happy connect gemini
+  ```
+</ParamField>
+
+## Related Commands
+
+- [happy auth](/cli/auth) - Authenticate with Happy (required first)
+- [happy codex](/cli/codex) - Use OpenAI Codex agent
+- [happy gemini](/cli/gemini) - Use Google Gemini agent
+- [happy doctor](/cli/doctor) - Diagnostics and troubleshooting
+
+<Note>
+  API keys and OAuth tokens are stored securely in Happy cloud with end-to-end encryption. Only your authenticated machines can access them.
+</Note>

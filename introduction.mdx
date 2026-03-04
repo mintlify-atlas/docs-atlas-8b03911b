@@ -1,0 +1,213 @@
+---
+title: Welcome to Happy
+description: Control Claude Code and Codex from anywhere with end-to-end encryption
+mode: custom
+---
+
+<div className="relative bg-gradient-to-br from-[#f18b3b] via-[#20b7c1] to-[#393c5b] dark:from-[#393c5b] dark:via-[#f18b3b] dark:to-[#20b7c1] py-20 overflow-hidden">
+  <div className="absolute inset-0 bg-black/20 dark:bg-black/40"></div>
+  <div className="relative max-w-6xl mx-auto px-6 text-center">
+    <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+      Claude Code On the Go
+    </h1>
+    <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-10">
+      Use Claude Code or Codex from anywhere with mobile and web clients, realtime voice, and end-to-end encryption. Never miss what your AI is building.
+    </p>
+    <div className="flex flex-wrap justify-center gap-4">
+      <a 
+        href="/quickstart" 
+        className="inline-flex items-center px-8 py-4 bg-white dark:bg-[#1a1d27] text-[#393c5b] dark:text-white font-semibold rounded-lg hover:bg-white/90 dark:hover:bg-[#242838] transition-colors no-underline"
+      >
+        Get Started
+      </a>
+      <a 
+        href="/cli/happy" 
+        className="inline-flex items-center px-8 py-4 border-2 border-white/50 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 hover:border-white/70 transition-colors no-underline"
+      >
+        Explore CLI Reference
+      </a>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Quick start</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Get up and running with Happy in minutes</p>
+  
+  <Steps>
+    <Step title="Download the mobile app">
+      Install Happy on your iOS or Android device to control your AI agents remotely.
+      
+      - [Download on the App Store](https://apps.apple.com/us/app/happy-claude-code-client/id6748571505)
+      - [Download on Google Play](https://play.google.com/store/apps/details?id=com.ex3ndr.happy)
+      - [Open Web App](https://app.happy.engineering)
+    </Step>
+    
+    <Step title="Install the CLI">
+      Install the Happy CLI on your computer to wrap Claude Code and Codex commands.
+      
+      <CodeGroup>
+      ```bash npm
+      npm install -g happy-coder
+      ```
+      
+      ```bash yarn
+      yarn global add happy-coder
+      ```
+      
+      ```bash pnpm
+      pnpm add -g happy-coder
+      ```
+      </CodeGroup>
+    </Step>
+    
+    <Step title="Authenticate with QR code">
+      Run the `happy` command and scan the QR code with your mobile app to link your devices.
+      
+      ```bash
+      happy
+      ```
+      
+      <Note>
+        Your authentication uses end-to-end encryption. The QR code contains a one-time challenge that establishes a secure connection between your devices.
+      </Note>
+    </Step>
+    
+    <Step title="Start coding with AI">
+      Use `happy` instead of `claude` to start sessions with mobile control enabled.
+      
+      ```bash
+      # Instead of: claude
+      happy
+      
+      # Instead of: codex
+      happy codex
+      
+      # Resume previous sessions
+      happy --resume
+      ```
+      
+      Now you can monitor and control your AI coding sessions from your phone, receive push notifications when input is needed, and switch control between devices instantly.
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Why Happy?</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Built for developers who code on the go</p>
+  
+  <CardGroup cols={3}>
+    <Card title="Mobile access" icon="mobile-screen" href="/features/mobile-access">
+      Check what your AI is building while away from your desk with native iOS, Android, and web clients.
+    </Card>
+    <Card title="Push notifications" icon="bell" href="/features/push-notifications">
+      Get alerted when Claude Code or Codex needs permission or encounters errors.
+    </Card>
+    <Card title="Device switching" icon="arrows-repeat" href="/features/device-switching">
+      Take control from phone or desktop with one keypress. Seamless transitions between devices.
+    </Card>
+    <Card title="End-to-end encryption" icon="lock" href="/features/encryption">
+      Your code never leaves your devices unencrypted. Built with TweetNaCl for cryptographic security.
+    </Card>
+    <Card title="Voice control" icon="microphone" href="/features/voice-control">
+      Talk to your AI agents in real-time with voice communication powered by LiveKit.
+    </Card>
+    <Card title="Open source" icon="code-branch" href="https://github.com/slopus/happy">
+      Audit the code yourself. No telemetry, no tracking. MIT licensed.
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Explore by topic</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Deep dive into Happy's capabilities</p>
+  
+  <CardGroup cols={2}>
+    <Card title="Authentication" icon="key" href="/guides/authentication">
+      Learn how QR code authentication works and manage your credentials securely.
+    </Card>
+    <Card title="Daemon management" icon="server" href="/guides/daemon-management">
+      Control the background service that enables remote session spawning.
+    </Card>
+    <Card title="Session management" icon="terminal" href="/guides/session-management">
+      Create, resume, and control AI coding sessions across devices.
+    </Card>
+    <Card title="Sandbox configuration" icon="shield" href="/guides/sandbox-configuration">
+      Configure OS-level sandboxing for additional security.
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Components</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Understand Happy's architecture</p>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <a href="/components/cli" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] overflow-hidden hover:border-[#f18b3b] dark:hover:border-[#f18b3b] transition-colors no-underline">
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Happy CLI</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Command-line interface that wraps Claude Code and Codex with mobile control capabilities.</p>
+        <div className="flex items-center text-sm font-medium text-[#f18b3b] group-hover:text-[#f18b3b]/80">
+          Learn more
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+    
+    <a href="/components/mobile-app" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] overflow-hidden hover:border-[#f18b3b] dark:hover:border-[#f18b3b] transition-colors no-underline">
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Mobile & Web App</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">React Native app for iOS and Android, plus web interface built with Expo.</p>
+        <div className="flex items-center text-sm font-medium text-[#f18b3b] group-hover:text-[#f18b3b]/80">
+          Learn more
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+    
+    <a href="/components/server" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] overflow-hidden hover:border-[#f18b3b] dark:hover:border-[#f18b3b] transition-colors no-underline">
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Happy Server</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Backend server built with Fastify and PostgreSQL for encrypted synchronization.</p>
+        <div className="flex items-center text-sm font-medium text-[#f18b3b] group-hover:text-[#f18b3b]/80">
+          Learn more
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+    
+    <a href="/components/agent" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] overflow-hidden hover:border-[#f18b3b] dark:hover:border-[#f18b3b] transition-colors no-underline">
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Happy Agent</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">CLI client for remote agent control with session creation and monitoring.</p>
+        <div className="flex items-center text-sm font-medium text-[#f18b3b] group-hover:text-[#f18b3b]/80">
+          Learn more
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div className="mt-20 mb-16 max-w-5xl mx-auto px-6">
+  <div className="rounded-2xl bg-gradient-to-r from-[#f18b3b] to-[#20b7c1] p-12 text-center">
+    <h2 className="text-3xl font-bold text-white mb-4">Ready to get started?</h2>
+    <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+      Install Happy and start controlling your AI coding sessions from anywhere in minutes.
+    </p>
+    <a 
+      href="/quickstart" 
+      className="inline-flex items-center px-8 py-4 bg-white text-[#393c5b] font-semibold rounded-lg hover:bg-white/90 transition-colors no-underline"
+    >
+      Get Started Now
+    </a>
+  </div>
+</div>

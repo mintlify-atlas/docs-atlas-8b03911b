@@ -1,80 +1,192 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get up and running with Happy in under 5 minutes
 ---
 
-## Get started in three steps
+## What is Happy?
 
-Get your documentation site running locally and make your first customization.
+Happy is a mobile and web client for Claude Code and Codex that lets you control AI coding agents from anywhere. Use Claude Code from your phone, get push notifications when permissions are needed, and switch between devices instantly—all with end-to-end encryption.
 
-### Step 1: Set up your local environment
+<Steps>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+### Install the CLI
 
-### Step 2: Deploy your changes
+Install Happy globally using npm:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<CodeGroup>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```bash npm
+npm install -g happy-coder
+```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+```bash yarn
+yarn global add happy-coder
+```
 
-### Step 3: Go live
+```bash pnpm
+pnpm add -g happy-coder
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+</CodeGroup>
 
-## Next steps
+<Note>
+Happy requires Node.js 20.0.0 or higher and the Claude CLI installed and logged in.
+</Note>
 
-Now that you have your docs running, explore these key features:
+### Verify Installation
+
+Check that Happy is installed correctly:
+
+```bash
+happy --version
+```
+
+You should see the Happy version number followed by the Claude CLI version.
+
+### Download the Mobile App
+
+Get the Happy app for your mobile device:
+
+- **iOS**: [Download from App Store](https://apps.apple.com/us/app/happy-claude-code-client/id6748571505)
+- **Android**: [Download from Google Play](https://play.google.com/store/apps/details?id=com.ex3ndr.happy)
+- **Web**: [Open Web App](https://app.happy.engineering)
+
+### Authenticate
+
+Run your first Happy session and authenticate:
+
+```bash
+happy
+```
+
+On first run, you'll be prompted to choose an authentication method:
+
+- **Mobile App**: Scan the QR code with your Happy mobile app
+- **Web Browser**: Open the authentication URL in your browser
+
+Once authenticated, Happy will start a Claude Code session.
+
+<Tip>
+Authentication credentials are stored securely in `~/.happy/access.key` and automatically used for future sessions.
+</Tip>
+
+### Start Your First Session
+
+After authentication, Happy automatically starts Claude Code. You can now:
+
+- **Work locally**: Type in your terminal as you normally would with Claude
+- **Control remotely**: Open the Happy app to view and control the session from your mobile device
+- **Switch seamlessly**: Press any key in your terminal to take back control from mobile
+
+```bash
+# Start a regular Claude session
+happy
+
+# Start with a specific prompt
+happy "help me refactor this component"
+
+# Resume a previous session
+happy --resume
+```
+
+### Try Different Modes
+
+Happy supports multiple AI coding agents:
+
+<CodeGroup>
+
+```bash Claude (default)
+happy
+```
+
+```bash Codex
+happy codex
+```
+
+```bash Gemini
+happy gemini
+```
+
+</CodeGroup>
+
+</Steps>
+
+## What's Next?
+
+You're now ready to use Happy! Here are some next steps:
 
 <CardGroup cols={2}>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
+<Card title="Installation Details" icon="download" href="/installation">
+Learn about system requirements and platform-specific setup
 </Card>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
+<Card title="Authentication" icon="key" href="/guides/authentication">
+Manage authentication and connect multiple devices
 </Card>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
+<Card title="Architecture" icon="book" href="/development/architecture">
+Understand how Happy works under the hood
 </Card>
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
+<Card title="CLI Reference" icon="terminal" href="/cli/happy">
+Explore all available commands and options
 </Card>
 
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Common Use Cases
+
+<AccordionGroup>
+
+<Accordion title="Mobile monitoring while away from desk">
+Start a Claude session on your computer with `happy`, then check progress from your phone using the Happy app. You'll get push notifications when Claude needs permissions or encounters errors.
+</Accordion>
+
+<Accordion title="Quick permission approvals on the go">
+When Claude Code requests permission to run commands or modify files, approve or deny them directly from your mobile device without returning to your computer.
+</Accordion>
+
+<Accordion title="Seamless device switching">
+Start coding on your desktop, continue reviewing on your phone during lunch, and resume on your laptop—all in the same session with complete context preservation.
+</Accordion>
+
+<Accordion title="Remote project management">
+Manage multiple coding sessions through the Happy daemon, monitoring progress across different projects from a single mobile interface.
+</Accordion>
+
+</AccordionGroup>
+
+## Quick Tips
+
+<Tip>
+Use `happy --yolo` as a shortcut for `--dangerously-skip-permissions` when you want Claude to work autonomously.
+</Tip>
+
+<Warning>
+Happy passes through all Claude CLI flags. Any option that works with `claude` also works with `happy`.
+</Warning>
+
+<Info>
+The Happy daemon runs in the background and manages sessions. It starts automatically when you run `happy` for the first time.
+</Info>
+
+## Need Help?
+
+If you encounter issues:
+
+```bash
+# Run diagnostics
+happy doctor
+
+# Check daemon status
+happy daemon status
+
+# View daemon logs
+happy daemon logs
+
+# Clean up runaway processes
+happy doctor clean
+```
+
+For more help, visit our [Discord community](https://discord.gg/fX9WBAhyfD) or check the [Documentation](https://happy.engineering/docs/).

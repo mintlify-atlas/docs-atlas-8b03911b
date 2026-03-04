@@ -1,0 +1,482 @@
+---
+title: 'happy daemon'
+description: 'Manage the Happy background service for remote sessions'
+icon: 'server'
+---
+
+The `happy daemon` command manages the Happy background service that enables remote session spawning and mobile control.
+
+## Syntax
+
+```bash
+happy daemon <subcommand>
+```
+
+## Subcommands
+
+### start
+
+Start the daemon in detached mode.
+
+```bash
+happy daemon start
+```
+
+Spawns a background process that runs independently of your terminal.
+
+### stop
+
+Stop the daemon (sessions continue running).
+
+```bash
+happy daemon stop
+```
+
+<Note>
+  Stopping the daemon does not kill active sessions. They continue running but can't spawn new sessions remotely until the daemon restarts.
+</Note>
+
+### status
+
+Show daemon status and diagnostics.
+
+```bash
+happy daemon status
+```
+
+Displays daemon-specific diagnostics including PID, uptime, and version.
+
+### list
+
+List active sessions tracked by the daemon.
+
+```bash
+happy daemon list
+```
+
+### stop-session
+
+Stop a specific session by ID.
+
+```bash
+happy daemon stop-session <session-id>
+```
+
+<ParamField path="session-id" type="string" required>
+  The session ID to stop
+</ParamField>
+
+### logs
+
+Display the path to the latest daemon log file.
+
+```bash
+happy daemon logs
+```
+
+### install
+
+Install the daemon as a system service (platform-specific).
+
+```bash
+happy daemon install
+```
+
+<Note>
+  On macOS, this creates a LaunchAgent that starts the daemon at login.
+</Note>
+
+### uninstall
+
+Uninstall the daemon system service.
+
+```bash
+happy daemon uninstall
+```
+
+## Description
+
+The Happy daemon is a background service that:
+- Enables spawning sessions from your mobile device
+- Manages session lifecycle
+- Provides keep-alive signals for active sessions
+- Handles version compatibility checks
+- Maintains session registry
+
+### Auto-Start Behavior
+
+The daemon automatically starts when you:
+- Run `happy` (main command)
+- Run `happy gemini`
+- Run `happy acp`
+- Start any agent that requires mobile control
+
+<Note>
+  You typically don't need to manually start the daemon - Happy handles it automatically.
+</Note>
+
+## Examples
+
+### Check Daemon Status
+
+```bash
+happy daemon status
+```
+
+Output:
+```
+🤖 Daemon Status
+✓ Daemon is running
+  PID: 12345
+  Started: 2024-01-15 10:30:00
+  CLI Version: 1.0.0
+  HTTP Port: 54321
+
+📄 Daemon State:
+Location: /Users/username/.happy/daemon-state.json
+{
+  "pid": 12345,
+  "startTime": 1705317000000,
+  "startedWithCliVersion": "1.0.0",
+  "httpPort": 54321
+}
+```
+
+### List Active Sessions
+
+```bash
+happy daemon list
+```
+
+Output when sessions are active:
+```
+Active sessions:
+[
+  {
+    "id": "abc-123-def-456",
+    "type": "claude",
+    "startTime": 1705317000000,
+    "path": "/Users/username/projects/my-app"
+  },
+  {
+    "id": "xyz-789-ghi-012",
+    "type": "gemini",
+    "startTime": 1705318000000,
+    "path": "/Users/username/projects/other-app"
+  }
+]
+```
+
+Output when no sessions:
+```
+No active sessions this daemon is aware of (they might have been started by a previous version of the daemon)
+```
+
+### Stop a Session
+
+```bash
+happy daemon stop-session abc-123-def-456
+```
+
+Output:
+```
+Session stopped
+```
+
+### View Daemon Logs
+
+```bash
+happy daemon logs
+```
+
+Output:
+```
+/Users/username/.happy/logs/2024-01-15-10-30-00-daemon.log
+```
+
+Then view the log:
+```bash
+tail -f $(happy daemon logs)
+```
+
+### Start Daemon Manually
+
+```bash
+happy daemon start
+```
+
+Output:
+```
+Daemon started successfully
+```
+
+### Stop Daemon
+
+```bash
+happy daemon stop
+```
+
+Output:
+```
+Daemon stopped
+```
+
+### Install as System Service (macOS)
+
+```bash
+happy daemon install
+```
+
+This creates a LaunchAgent at:
+```
+~/Library/LaunchAgents/com.happy.daemon.plist
+```
+
+The daemon will automatically start:
+- At system login
+- When the user logs in
+- After crashes (with exponential backoff)
+
+### Uninstall System Service
+
+```bash
+happy daemon uninstall
+```
+
+Removes the LaunchAgent and stops the daemon.
+
+## Daemon State File
+
+The daemon stores its state in:
+- **Production**: `~/.happy/daemon-state.json`
+- **Development**: `~/.happy-dev/daemon-state.json`
+
+### State File Contents
+
+```json
+{
+  "pid": 12345,
+  "startTime": 1705317000000,
+  "startedWithCliVersion": "1.0.0",
+  "httpPort": 54321
+}
+```
+
+<ParamField path="pid" type="number">
+  Process ID of the running daemon
+</ParamField>
+
+<ParamField path="startTime" type="number">
+  Unix timestamp when daemon started
+</ParamField>
+
+<ParamField path="startedWithCliVersion" type="string">
+  Version of Happy CLI that started the daemon
+</ParamField>
+
+<ParamField path="httpPort" type="number">
+  HTTP port the daemon listens on for control commands
+</ParamField>
+
+## Log Files
+
+Daemon logs are stored in:
+- **Location**: `~/.happy/logs/` (or `~/.happy-dev/logs/`)
+- **Format**: `YYYY-MM-DD-HH-MM-SS-daemon.log`
+- **Example**: `2024-01-15-10-30-00-daemon.log`
+
+### Viewing Logs
+
+<CodeGroup>
+```bash Latest Daemon Log
+tail -f $(happy daemon logs)
+```
+
+```bash All Logs
+ls -lt ~/.happy/logs/*.log
+```
+
+```bash Recent Daemon Logs
+ls -lt ~/.happy/logs/*daemon*.log | head -5
+```
+</CodeGroup>
+
+## Version Compatibility
+
+The daemon includes version checking:
+- Automatically restarts if CLI version doesn't match daemon version
+- Ensures compatibility between daemon and CLI commands
+- Prevents version mismatch issues
+
+### Version Mismatch Handling
+
+When you update Happy CLI:
+1. Next `happy` command detects version mismatch
+2. Automatically stops old daemon
+3. Starts new daemon with current version
+4. Session continues seamlessly
+
+## Process Management
+
+### Daemon Process Hierarchy
+
+```
+happy daemon (PID 12345)
+├── Session 1 (claude)
+├── Session 2 (gemini)
+└── MCP Servers
+```
+
+### Cleanup Runaway Processes
+
+If processes become orphaned or stuck:
+
+```bash
+happy doctor clean
+```
+
+This will:
+- Find all Happy-related processes
+- Identify orphaned/stuck processes
+- Kill runaway processes
+- Clean up stale state files
+
+Output:
+```
+Cleaned up 3 runaway processes
+```
+
+## Troubleshooting
+
+### Daemon Won't Start
+
+If daemon fails to start:
+
+```bash
+# Check for port conflicts
+happy daemon status
+
+# View logs
+tail -f $(happy daemon logs)
+
+# Kill any stuck processes
+happy doctor clean
+
+# Try starting again
+happy daemon start
+```
+
+### Daemon Keeps Restarting
+
+If daemon repeatedly restarts:
+
+```bash
+# Check logs for errors
+tail -f $(happy daemon logs)
+
+# Run diagnostics
+happy doctor
+
+# Check for version issues
+happy --version
+```
+
+### Stale Daemon State
+
+If state file exists but daemon isn't running:
+
+```bash
+# Happy automatically cleans stale state
+happy daemon status
+
+# Or manually clean
+rm ~/.happy/daemon-state.json
+happy daemon start
+```
+
+### Can't Connect to Daemon
+
+If commands fail to reach the daemon:
+
+```bash
+# Check if running
+happy daemon status
+
+# Check port isn't blocked
+lsof -i :$(cat ~/.happy/daemon-state.json | jq -r .httpPort)
+
+# Restart daemon
+happy daemon stop
+happy daemon start
+```
+
+### Sessions Not Listed
+
+If `happy daemon list` shows no sessions but you have active sessions:
+
+<Note>
+  Sessions started before the current daemon may not appear in the list. The daemon only tracks sessions started after it was launched.
+</Note>
+
+Solution:
+```bash
+# View all Happy processes
+happy doctor
+
+# This shows all sessions regardless of daemon tracking
+```
+
+## Environment Variables
+
+<ParamField path="HAPPY_SERVER_URL" type="string">
+  Server URL for the daemon to connect to
+
+  ```bash
+  HAPPY_SERVER_URL=http://localhost:3005 happy daemon start
+  ```
+</ParamField>
+
+<ParamField path="HAPPY_HOME_DIR" type="string">
+  Override Happy data directory
+
+  ```bash
+  HAPPY_HOME_DIR=/custom/path happy daemon start
+  ```
+</ParamField>
+
+## Advanced Usage
+
+### Synchronous Start (Internal)
+
+```bash
+happy daemon start-sync
+```
+
+Starts the daemon synchronously (blocks until daemon exits). This is used internally by `happy daemon start` to spawn the detached process.
+
+<Warning>
+  Don't use `start-sync` directly - use `start` instead. The `start-sync` command is for internal use only.
+</Warning>
+
+### Monitor Daemon
+
+```bash
+# Watch daemon status
+watch -n 1 'happy daemon status'
+
+# Monitor logs
+tail -f $(happy daemon logs)
+
+# Check process
+ps aux | grep happy
+```
+
+## Related Commands
+
+- [happy](/cli/happy) - Start Claude Code sessions
+- [happy doctor](/cli/doctor) - System diagnostics and cleanup
+- [happy auth](/cli/auth) - Authentication management
+
+<Note>
+  The daemon runs automatically when needed. You typically only need these commands for troubleshooting or manual control.
+</Note>

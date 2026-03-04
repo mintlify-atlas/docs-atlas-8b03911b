@@ -1,0 +1,265 @@
+---
+title: Authentication
+description: Learn how to authenticate with Happy using QR code or web-based authentication
+---
+
+# Authentication
+
+Happy uses secure, device-based authentication to protect your AI sessions. Your master secret never leaves your mobile device or web browser - the CLI only receives a derived key for machine-specific encryption.
+
+## Authentication Methods
+
+Happy offers two authentication methods:
+
+1. **Mobile Authentication** - Scan a QR code with the Happy mobile app
+2. **Web Authentication** - Authenticate through your web browser
+
+When you run `happy auth login`, you'll be prompted to choose your preferred method.
+
+## Authentication Flow
+
+<Steps>
+  <Step title="Generate ephemeral key pair">
+    The CLI creates a temporary cryptographic key pair using TweetNaCl for secure key exchange.
+  </Step>
+  
+  <Step title="Create authentication request">
+    The public key is sent to the Happy server at `/v1/auth/request` with `supportsV2: true` flag.
+  </Step>
+  
+  <Step title="Display authentication prompt">
+    **Mobile**: QR code containing `happy://terminal?<base64url-encoded-public-key>`
+    
+    **Web**: Browser opens with authentication URL containing the public key
+  </Step>
+  
+  <Step title="Approve on device">
+    Complete authentication on your mobile device or in the browser. The server encrypts your credentials using the ephemeral public key.
+  </Step>
+  
+  <Step title="Receive encrypted credentials">
+    The CLI polls the server until authentication is approved, then decrypts the response using the ephemeral private key.
+  </Step>
+  
+  <Step title="Store credentials locally">
+    Credentials are saved to `~/.happy/` (or `$HAPPY_HOME_DIR/`) with restricted file permissions.
+  </Step>
+</Steps>
+
+## Authentication Commands
+
+### Login
+
+Authenticate with Happy for the first time or re-authenticate:
+
+```bash
+happy auth login
+```
+
+If you're already authenticated, you'll see:
+
+```
+✓ Already authenticated
+  Machine ID: abc-123-def
+  Host: MacBook-Pro.local
+  Use 'happy auth login --force' to re-authenticate
+```
+
+### Force Re-authentication
+
+Clear all credentials and re-authenticate from scratch:
+
+```bash
+happy auth login --force
+```
+
+This will:
+- Stop the daemon if running
+- Clear existing credentials
+- Clear machine ID
+- Re-authenticate and register the machine
+
+<Warning>
+  Force authentication clears your local credentials. You'll need to re-authenticate from your mobile device or web browser.
+</Warning>
+
+### Check Status
+
+View your current authentication status:
+
+```bash
+happy auth status
+```
+
+Example output:
+
+```
+Authentication Status
+
+✓ Authenticated
+  Token: eyJhbGciOiJIUzI1NiIsInR5cCI6...
+✓ Machine registered
+  Machine ID: 550e8400-e29b-41d4-a716-446655440000
+  Host: MacBook-Pro.local
+
+  Data directory: /Users/john/.happy
+✓ Daemon running
+```
+
+### Logout
+
+Remove all authentication data and credentials:
+
+```bash
+happy auth logout
+```
+
+You'll be asked to confirm:
+
+```
+This will log you out of Happy
+⚠️  You will need to re-authenticate to use Happy again
+Are you sure you want to log out? (y/N):
+```
+
+<Note>
+  Logging out removes your entire `~/.happy/` directory and stops the daemon. This action cannot be undone.
+</Note>
+
+## Security Details
+
+### End-to-End Encryption
+
+Happy uses **TweetNaCl** (NaCl cryptography library) for all encryption:
+
+- **Ephemeral key exchange**: Temporary key pairs created for each authentication
+- **Box encryption**: Public-key authenticated encryption for credential exchange
+- **No plaintext transmission**: All sensitive data encrypted before leaving your device
+
+### Key Architecture
+
+```
+┌─────────────────┐
+│  Mobile/Web     │
+│  Master Secret  │  ← Never leaves your device
+└────────┬────────┘
+         │ Derives
+         ▼
+┌─────────────────┐
+│  Machine Key    │  ← Unique per CLI machine
+│  (Encrypted)    │
+└────────┬────────┘
+         │ Sent via
+         │ encrypted channel
+         ▼
+┌─────────────────┐
+│  CLI Machine    │
+│  ~/.happy/      │
+└─────────────────┘
+```
+
+### Credential Storage
+
+Credentials are stored in:
+
+- **Location**: `~/.happy/` (or `$HAPPY_HOME_DIR/`)
+- **Files**: `access.key` (legacy) or newer data-key format
+- **Permissions**: Restricted to user-only access
+- **Format**: Base64-encoded encrypted data
+
+### Authentication Types
+
+Happy supports two credential formats:
+
+<Accordion title="Legacy (32-byte secret)">
+  Older authentication method using a 32-byte shared secret:
+  
+  ```typescript
+  {
+    encryption: {
+      type: 'legacy',
+      secret: Uint8Array(32)
+    },
+    token: string
+  }
+  ```
+</Accordion>
+
+<Accordion title="Data Key (public-key cryptography)">
+  Modern authentication using public-key cryptography:
+  
+  ```typescript
+  {
+    encryption: {
+      type: 'dataKey',
+      publicKey: Uint8Array(32),
+      machineKey: Uint8Array(32)
+    },
+    token: string
+  }
+  ```
+  
+  The server response includes a version byte (`0x00`) prefix to indicate the data-key format.
+</Accordion>
+
+## Troubleshooting
+
+### Browser didn't open automatically
+
+If you chose web authentication but the browser didn't open:
+
+1. Copy the URL displayed in the terminal
+2. Paste it into your browser manually
+3. Complete authentication in the browser
+
+### QR code not scanning
+
+If the QR code won't scan:
+
+1. Ensure your terminal supports unicode characters
+2. Try increasing your terminal font size
+3. Use the manual URL shown below the QR code
+4. Switch to web authentication with `happy auth login` and select the web option
+
+### Authentication polling timeout
+
+If authentication takes too long:
+
+- The CLI polls every 1 second for up to several minutes
+- Press `Ctrl+C` to cancel and try again
+- Check your network connection to Happy servers
+
+### "Not authenticated" errors
+
+If you see authentication errors:
+
+```bash
+# Check authentication status
+happy auth status
+
+# Re-authenticate if needed
+happy auth login --force
+```
+
+### Backup codes not available
+
+<Note>
+  Backup codes and master secrets are only accessible from your mobile device or web account, not from the CLI. This is a security feature - each CLI machine only has a derived key, not the master secret.
+</Note>
+
+## Environment Variables
+
+Customize authentication behavior:
+
+```bash
+# Use custom Happy server
+export HAPPY_SERVER_URL=https://custom.happy-server.com
+
+# Use custom data directory
+export HAPPY_HOME_DIR=~/.config/happy
+```
+
+## Related Commands
+
+- [`happy doctor`](/guides/troubleshooting) - Diagnose authentication issues
+- [`happy daemon status`](/guides/daemon-management) - Check daemon authentication state

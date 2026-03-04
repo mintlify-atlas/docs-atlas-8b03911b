@@ -1,0 +1,415 @@
+---
+title: 'happy notify'
+description: 'Send push notifications to your mobile device'
+icon: 'bell'
+---
+
+The `happy notify` command sends push notifications to all your registered mobile devices from the command line.
+
+## Syntax
+
+```bash
+happy notify -p <message> [-t <title>]
+```
+
+## Options
+
+<ParamField path="-p" type="string" required>
+  Notification message text (required)
+  
+  The main content of the notification that will be displayed on your mobile device.
+</ParamField>
+
+<ParamField path="-t" type="string">
+  Notification title (optional)
+  
+  Custom title for the notification. Defaults to "Happy" if not specified.
+</ParamField>
+
+<ParamField path="-h, --help" type="flag">
+  Show help information
+</ParamField>
+
+## Description
+
+The `notify` command lets you send push notifications from your terminal to your mobile devices. This is useful for:
+- Long-running task completion alerts
+- Build status notifications
+- Deployment confirmations
+- System monitoring alerts
+- Custom automation notifications
+
+<Note>
+  You must be authenticated with `happy auth login` before using notify. Notifications are sent to all devices registered to your Happy account.
+</Note>
+
+## Examples
+
+### Basic Notification
+
+```bash
+happy notify -p "Deployment complete!"
+```
+
+Output:
+```
+📱 Sending push notification...
+✓ Push notification sent successfully!
+  Title: Happy
+  Message: Deployment complete!
+  Check your mobile device for the notification.
+```
+
+Your phone receives:
+```
+┌────────────────────────┐
+│ Happy                  │
+│ Deployment complete!   │
+└────────────────────────┘
+```
+
+### Notification with Custom Title
+
+```bash
+happy notify -p "Database connection restored" -t "Server Status"
+```
+
+Output:
+```
+📱 Sending push notification...
+✓ Push notification sent successfully!
+  Title: Server Status
+  Message: Database connection restored
+  Check your mobile device for the notification.
+```
+
+Your phone receives:
+```
+┌──────────────────────────────┐
+│ Server Status                │
+│ Database connection restored │
+└──────────────────────────────┘
+```
+
+### Build Completion Alert
+
+```bash
+npm run build && happy notify -p "Build completed successfully" -t "CI/CD"
+```
+
+Sends a notification only if the build succeeds.
+
+### Test Failure Alert
+
+```bash
+npm test || happy notify -p "Tests failed! Check CI logs" -t "⚠️ Test Suite"
+```
+
+Sends a notification if tests fail.
+
+### Long-Running Task
+
+```bash
+./long-running-script.sh
+happy notify -p "Script execution finished"
+```
+
+Get notified when a long-running task completes.
+
+### Deployment Pipeline
+
+<CodeGroup>
+```bash Success
+./deploy.sh && happy notify -p "Deployment to production succeeded" -t "✅ Deploy"
+```
+
+```bash Failure
+./deploy.sh || happy notify -p "Deployment failed! Rolling back" -t "🚨 Deploy"
+```
+</CodeGroup>
+
+### Database Backup
+
+```bash
+pg_dump mydb > backup.sql
+happy notify -p "Database backup completed" -t "Backup"
+```
+
+### System Monitoring
+
+```bash
+# In a monitoring script
+if [ $(df -h / | tail -1 | awk '{print $5}' | sed 's/%//') -gt 90 ]; then
+  happy notify -p "Disk usage above 90%" -t "⚠️ System Alert"
+fi
+```
+
+## Use in Scripts
+
+### Bash Script
+
+```bash
+#!/bin/bash
+
+# Deploy script with notifications
+echo "Starting deployment..."
+
+if ./deploy.sh; then
+  happy notify -p "Deployment completed successfully" -t "Deploy"
+  echo "Notification sent"
+else
+  happy notify -p "Deployment failed with errors" -t "🚨 Deploy"
+  echo "Error notification sent"
+  exit 1
+fi
+```
+
+### Makefile
+
+```makefile
+.PHONY: build notify-build
+
+build:
+	@echo "Building application..."
+	@npm run build
+	@$(MAKE) notify-build
+
+notify-build:
+	@happy notify -p "Build completed" -t "Build System"
+```
+
+### GitHub Actions
+
+```yaml
+name: CI/CD
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Notify
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            happy notify -p "Build succeeded on ${{ github.ref }}" -t "CI"
+          else
+            happy notify -p "Build failed on ${{ github.ref }}" -t "🚨 CI"
+          fi
+```
+
+## Notification Metadata
+
+Notifications include metadata:
+
+```javascript
+{
+  title: "Custom Title" || "Happy",
+  message: "Your message",
+  data: {
+    source: "cli",
+    timestamp: 1705317000000,
+    sessionId: "abc-123" // if sent from session
+  }
+}
+```
+
+The mobile app can use this metadata to:
+- Show notification time
+- Link to related sessions
+- Filter by source
+
+## Output
+
+Success output:
+```
+📱 Sending push notification...
+✓ Push notification sent successfully!
+  Title: Happy
+  Message: Your message here
+  Check your mobile device for the notification.
+```
+
+Error output:
+```
+✗ Failed to send push notification
+Error: Not authenticated. Please run "happy auth login" first.
+```
+
+## Troubleshooting
+
+### Not Authenticated
+
+If you see "Not authenticated":
+
+```bash
+happy auth login
+```
+
+Authenticate with Happy before sending notifications.
+
+### No Message Provided
+
+If you forget the `-p` flag:
+
+```bash
+happy notify
+```
+
+Output:
+```
+Error: Message is required. Use -p "your message" to specify the notification text.
+Run "happy notify --help" for usage information.
+```
+
+Solution:
+```bash
+happy notify -p "Your message"
+```
+
+### Notification Not Received
+
+If notification doesn't appear on your phone:
+
+1. **Check authentication**:
+   ```bash
+   happy auth status
+   ```
+
+2. **Check mobile app**:
+   - Ensure Happy mobile app is installed
+   - Check notification permissions
+   - Verify you're logged in
+
+3. **Check notification settings**:
+   - Open mobile app → Settings → Notifications
+   - Ensure notifications are enabled
+
+4. **Test notification**:
+   ```bash
+   happy notify -p "Test notification" -t "Test"
+   ```
+
+### Multiple Devices
+
+Notifications are sent to **all** registered devices:
+- iPhone
+- iPad
+- Android phone
+- Any other registered devices
+
+To see registered devices:
+1. Open Happy mobile app
+2. Go to Settings → Devices
+3. View all registered machines
+
+### Rate Limiting
+
+If sending many notifications rapidly:
+- There may be rate limits (implementation-dependent)
+- Space out notifications in loops
+- Consider batching updates
+
+## Best Practices
+
+### Message Content
+
+<CodeGroup>
+```bash Good - Clear and Actionable
+happy notify -p "Backup completed: 2.5GB" -t "Backup"
+```
+
+```bash Bad - Vague
+happy notify -p "Done"
+```
+</CodeGroup>
+
+### Title Usage
+
+<CodeGroup>
+```bash Good - Descriptive Title
+happy notify -p "All 127 tests passed" -t "Test Suite"
+```
+
+```bash Good - Emoji for Quick Recognition
+happy notify -p "Disk usage: 95%" -t "⚠️ System"
+```
+</CodeGroup>
+
+### Error Notifications
+
+```bash
+# Include context in error notifications
+happy notify -p "API deploy failed at v1.2.3" -t "🚨 Production"
+```
+
+### Success Notifications
+
+```bash
+# Include relevant details
+happy notify -p "Deployed v1.2.3 to production in 3m 42s" -t "✅ Deploy"
+```
+
+## Advanced Usage
+
+### Conditional Notifications
+
+```bash
+# Only notify on errors
+command 2>&1 | tee /tmp/output.log
+if grep -q ERROR /tmp/output.log; then
+  happy notify -p "Errors detected in command output" -t "Alert"
+fi
+```
+
+### Threshold Alerts
+
+```bash
+# Alert when CPU usage is high
+CPU=$(top -l 1 | grep "CPU usage" | awk '{print $3}' | sed 's/%//')
+if (( $(echo "$CPU > 80" | bc -l) )); then
+  happy notify -p "CPU usage at ${CPU}%" -t "System"
+fi
+```
+
+### Scheduled Notifications
+
+```bash
+# Add to crontab for daily reports
+0 9 * * * /path/to/generate-report.sh && happy notify -p "Daily report ready" -t "Reports"
+```
+
+### Parallel Tasks
+
+```bash
+# Notify when all parallel tasks complete
+task1 & task2 & task3 &
+wait
+happy notify -p "All tasks completed" -t "Tasks"
+```
+
+## Environment Variables
+
+<ParamField path="HAPPY_SERVER_URL" type="string">
+  Override Happy server URL for notifications
+
+  ```bash
+  HAPPY_SERVER_URL=http://localhost:3005 happy notify -p "Test"
+  ```
+</ParamField>
+
+## Related Commands
+
+- [happy auth](/cli/auth) - Required for authentication
+- [happy](/cli/happy) - Sessions automatically send notifications
+- [happy doctor](/cli/doctor) - Troubleshoot notification issues
+
+<Note>
+  Notifications are sent asynchronously. The command returns immediately after queuing the notification, not after delivery to devices.
+</Note>

@@ -1,0 +1,460 @@
+---
+title: Daemon Management
+description: Manage the Happy background service for remote control and session management
+---
+
+# Daemon Management
+
+The Happy daemon is a persistent background process that enables remote control from the mobile app, manages AI sessions, and handles automatic version updates.
+
+## What is the Daemon?
+
+The daemon provides:
+
+- **Remote session control** - Start and stop AI sessions from your mobile device
+- **Session tracking** - Monitor active sessions and their status
+- **Auto-updates** - Automatically restarts when Happy CLI is upgraded
+- **Background persistence** - Keeps running even when you close your terminal
+
+<Note>
+  The daemon automatically starts when you run `happy` for the first time. You typically don't need to manage it manually.
+</Note>
+
+## Daemon Commands
+
+### Start Daemon
+
+Start the daemon as a background process:
+
+```bash
+happy daemon start
+```
+
+The daemon will:
+1. Check if another daemon is already running
+2. Verify version compatibility with current CLI
+3. Stop old daemon if version mismatch detected
+4. Start new daemon process in background
+5. Write PID and state to `daemon.state.json`
+
+Example output:
+```
+Daemon started successfully
+```
+
+### Stop Daemon
+
+Gracefully shutdown the daemon:
+
+```bash
+happy daemon stop
+```
+
+This performs a clean shutdown:
+1. Updates backend status to "shutting-down"
+2. Closes WebSocket connection
+3. Stops HTTP control server
+4. Deletes state file
+5. Releases lock file
+
+<Warning>
+  Stopping the daemon does NOT kill active AI sessions - they continue running independently.
+</Warning>
+
+### Check Status
+
+View detailed daemon status and diagnostics:
+
+```bash
+happy daemon status
+```
+
+Shows:
+- Daemon running status
+- Process ID (PID)
+- CLI version
+- HTTP port
+- Start time
+- All Happy-related processes
+
+Example output:
+```
+🤖 Daemon Status
+✓ Daemon is running
+  PID: 12345
+  Started: 3/4/2026, 2:30:45 PM
+  CLI Version: 1.0.0
+  HTTP Port: 50097
+
+🔍 All Happy CLI Processes
+
+🤖 Daemon:
+  PID 12345: /usr/local/bin/node .../dist/index.mjs daemon start-sync
+
+🔗 Daemon-Spawned Sessions:
+  PID 12350: /usr/local/bin/node .../dist/index.mjs --started-by daemon
+```
+
+### List Active Sessions
+
+Show all sessions tracked by the daemon:
+
+```bash
+happy daemon list
+```
+
+Example output:
+```json
+Active sessions:
+[
+  {
+    "pid": 12350,
+    "happySessionId": "session-uuid-123",
+    "projectPath": "/Users/john/projects/myapp",
+    "startedBy": "happy-app at 3/4/2026, 2:35:12 PM"
+  }
+]
+```
+
+### Stop a Session
+
+Terminate a specific session by ID:
+
+```bash
+happy daemon stop-session <session-id>
+```
+
+Example:
+```bash
+happy daemon stop-session session-uuid-123
+```
+
+### View Daemon Logs
+
+Get the path to the latest daemon log file:
+
+```bash
+happy daemon logs
+```
+
+Output:
+```
+/Users/john/.happy/logs/2026-03-04-14-30-45-daemon.log
+```
+
+Then view logs with:
+```bash
+tail -f $(happy daemon logs)
+```
+
+## Daemon Lifecycle
+
+### Startup Process
+
+<Steps>
+  <Step title="Version check">
+    Daemon reads `daemon.state.json` and compares `startedWithCliVersion` with the current CLI version from `package.json`.
+  </Step>
+  
+  <Step title="Stop old daemon">
+    If version mismatch detected, stops the old daemon gracefully (or forcefully with SIGKILL).
+  </Step>
+  
+  <Step title="Acquire lock">
+    Creates exclusive lock file with `O_EXCL` flag to prevent multiple daemon instances.
+  </Step>
+  
+  <Step title="Authenticate">
+    Calls `authAndSetupMachineIfNeeded()` to ensure valid credentials exist.
+  </Step>
+  
+  <Step title="Start servers">
+    - HTTP control server on random port (127.0.0.1 only)
+    - WebSocket connection to Happy backend
+  </Step>
+  
+  <Step title="Register RPC handlers">
+    Exposes `spawn-happy-session`, `stop-session`, `requestShutdown` for remote control.
+  </Step>
+  
+  <Step title="Write state">
+    Persists PID, version, HTTP port, and start time to `daemon.state.json`.
+  </Step>
+  
+  <Step title="Start heartbeat">
+    Checks for version updates every 60 seconds and prunes dead sessions.
+  </Step>
+</Steps>
+
+### Auto-Update Mechanism
+
+The daemon automatically detects when you upgrade Happy CLI:
+
+```bash
+npm upgrade happy-coder
+# or
+yarn upgrade happy-coder
+```
+
+**Update flow:**
+
+1. Heartbeat (every 60s) reads `package.json` from disk
+2. Compares disk version with compiled `configuration.currentCliVersion`
+3. If mismatch detected:
+   - Spawns new daemon with updated version
+   - Waits to be killed by new daemon
+4. New daemon starts, detects old version in `daemon.state.json`
+5. New daemon stops old daemon via `/stop` endpoint or SIGKILL
+6. New daemon takes over
+
+<Note>
+  Heartbeat interval can be customized with `HAPPY_DAEMON_HEARTBEAT_INTERVAL` environment variable (default: 60000ms).
+</Note>
+
+### Shutdown Process
+
+Graceful shutdown sequence:
+
+1. **Receive shutdown signal** (SIGINT, SIGTERM, HTTP `/stop`, or RPC `requestShutdown`)
+2. **Update backend state** to "shutting-down" via WebSocket
+3. **Disconnect WebSocket** from Happy server
+4. **Stop HTTP server** (control endpoints become unavailable)
+5. **Delete state file** (`daemon.state.json`)
+6. **Release lock file** (allows new daemon to start)
+7. **Exit process** with code 0
+
+## State Management
+
+### daemon.state.json
+
+Location: `~/.happy/daemon.state.json` (or `$HAPPY_HOME_DIR/`)
+
+```json
+{
+  "pid": 12345,
+  "httpPort": 50097,
+  "startTime": "3/4/2026, 2:30:45 PM",
+  "startedWithCliVersion": "1.0.0",
+  "lastHeartbeat": "3/4/2026, 2:31:45 PM",
+  "daemonLogPath": "/Users/john/.happy/logs/2026-03-04-14-30-45-daemon.log"
+}
+```
+
+### Lock File
+
+Location: `~/.happy/daemon.lock`
+
+- Created with `O_EXCL` flag for atomic acquisition
+- Contains PID for debugging
+- Prevents multiple daemon instances
+- Automatically cleaned up on graceful shutdown
+
+## HTTP Control Server
+
+The daemon runs a local HTTP server (127.0.0.1 only) for CLI control:
+
+### Endpoints
+
+<Accordion title="POST /session-started">
+  **Purpose**: Session webhook - notifies daemon when a new session starts
+  
+  **Request Body**:
+  ```json
+  {
+    "pid": 12350,
+    "happySessionId": "session-uuid-123",
+    "projectPath": "/Users/john/projects/myapp"
+  }
+  ```
+  
+  **Response**: `200 OK`
+</Accordion>
+
+<Accordion title="GET /list">
+  **Purpose**: List all tracked sessions
+  
+  **Response**:
+  ```json
+  [
+    {
+      "pid": 12350,
+      "happySessionId": "session-uuid-123",
+      "projectPath": "/Users/john/projects/myapp",
+      "startedBy": "happy-app at 3/4/2026, 2:35:12 PM"
+    }
+  ]
+  ```
+</Accordion>
+
+<Accordion title="POST /stop-session">
+  **Purpose**: Stop a specific session
+  
+  **Request Body**:
+  ```json
+  {
+    "sessionId": "session-uuid-123"
+  }
+  ```
+  
+  **Response**: `200 OK` or `404 Not Found`
+</Accordion>
+
+<Accordion title="POST /stop">
+  **Purpose**: Gracefully shutdown the daemon
+  
+  **Response**: `200 OK`
+</Accordion>
+
+## Remote Control (RPC)
+
+The daemon exposes RPC methods via WebSocket for mobile app control:
+
+### spawn-happy-session
+
+Start a new AI session remotely:
+
+```typescript
+interface SpawnSessionOptions {
+  projectPath: string;
+  agent: 'claude' | 'codex' | 'gemini';
+  resume?: string;  // Session ID to resume
+}
+
+interface SpawnSessionResult {
+  success: boolean;
+  pid: number;
+  happySessionId?: string;
+  error?: string;
+}
+```
+
+### stop-session
+
+Stop a running session:
+
+```typescript
+interface StopSessionParams {
+  sessionId: string;
+}
+```
+
+### requestShutdown
+
+Request daemon shutdown from mobile app:
+
+```typescript
+interface ShutdownParams {
+  reason?: string;
+}
+```
+
+## Process Management
+
+### Tracked Sessions
+
+The daemon tracks sessions in memory:
+
+```typescript
+interface TrackedSession {
+  pid: number;
+  happySessionId: string | null;
+  projectPath: string;
+  startedBy: string;
+  process: ChildProcess;
+}
+```
+
+Sessions can be started by:
+- **Daemon-spawned**: Via mobile app RPC (tracked immediately)
+- **Terminal-spawned**: User runs `happy` directly (tracked via webhook)
+
+### Session Health Monitoring
+
+Daemon monitors session health:
+
+1. **Heartbeat interval** checks process status
+2. **Exit handlers** remove dead sessions from tracking
+3. **Webhook timeout** (10s) for daemon-spawned sessions
+
+## Troubleshooting
+
+### Daemon won't start
+
+Check if another daemon is running:
+
+```bash
+happy daemon status
+```
+
+If stale state detected:
+
+```bash
+happy doctor clean
+```
+
+### Version mismatch
+
+If daemon shows wrong version:
+
+```bash
+# Stop old daemon
+happy daemon stop
+
+# Start with current version
+happy daemon start
+```
+
+### Orphaned processes
+
+Clean up runaway Happy processes:
+
+```bash
+happy doctor clean
+```
+
+This finds and kills:
+- Stale daemon processes
+- Hung version checks
+- Orphaned sessions
+
+### Port conflicts
+
+Daemon uses random port for HTTP server. If conflicts occur:
+
+1. Stop daemon: `happy daemon stop`
+2. Check for port usage: `lsof -i tcp:<port>`
+3. Restart daemon: `happy daemon start`
+
+### Lock file stuck
+
+If daemon fails to acquire lock:
+
+```bash
+# Remove stale lock file
+rm ~/.happy/daemon.lock
+
+# Restart daemon
+happy daemon start
+```
+
+## Environment Variables
+
+```bash
+# Custom home directory
+export HAPPY_HOME_DIR=~/.config/happy
+
+# Custom server URL
+export HAPPY_SERVER_URL=https://custom.happy-server.com
+
+# Custom heartbeat interval (milliseconds)
+export HAPPY_DAEMON_HEARTBEAT_INTERVAL=30000
+
+# Enable debug logging
+export DEBUG=1
+```
+
+## Related Commands
+
+- [`happy doctor`](/guides/troubleshooting) - Diagnose daemon issues
+- [`happy auth`](/guides/authentication) - Manage authentication
+- [`happy sandbox`](/guides/sandbox-configuration) - Configure sandboxing

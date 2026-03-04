@@ -1,0 +1,564 @@
+---
+title: Installation
+description: Install Happy on your system and configure platform-specific requirements
+---
+
+## System Requirements
+
+<Info>
+Happy works on macOS, Linux, and Windows with the following minimum requirements.
+</Info>
+
+### Required Software
+
+- **Node.js**: Version 20.0.0 or higher
+- **Package Manager**: npm, yarn, or pnpm
+- **Claude CLI**: Installed and authenticated (for Claude mode)
+- **Gemini CLI**: Installed for Gemini mode (optional)
+
+### Recommended
+
+- **Terminal**: Modern terminal emulator with Unicode and emoji support
+- **Mobile Device**: iOS 14+, Android 8+, or modern web browser
+
+## Installation Methods
+
+<Tabs>
+
+<Tab title="npm">
+
+### Install with npm
+
+The simplest way to install Happy:
+
+```bash
+npm install -g happy-coder
+```
+
+Verify the installation:
+
+```bash
+happy --version
+```
+
+### Update Happy
+
+To update to the latest version:
+
+```bash
+npm update -g happy-coder
+```
+
+</Tab>
+
+<Tab title="yarn">
+
+### Install with Yarn
+
+Install Happy globally using Yarn:
+
+```bash
+yarn global add happy-coder
+```
+
+Verify the installation:
+
+```bash
+happy --version
+```
+
+### Update Happy
+
+To update to the latest version:
+
+```bash
+yarn global upgrade happy-coder
+```
+
+</Tab>
+
+<Tab title="pnpm">
+
+### Install with pnpm
+
+Install Happy globally using pnpm:
+
+```bash
+pnpm add -g happy-coder
+```
+
+Verify the installation:
+
+```bash
+happy --version
+```
+
+### Update Happy
+
+To update to the latest version:
+
+```bash
+pnpm update -g happy-coder
+```
+
+</Tab>
+
+<Tab title="From Source">
+
+### Install from Source
+
+For development or the latest features:
+
+<Steps>
+
+#### Clone the Repository
+
+```bash
+git clone https://github.com/slopus/happy.git
+cd happy
+```
+
+#### Install Dependencies
+
+```bash
+yarn install
+```
+
+#### Build the Project
+
+```bash
+yarn build
+```
+
+#### Run from Source
+
+```bash
+# From repository root
+yarn cli --help
+yarn cli codex
+
+# Or from package directory
+cd packages/happy-cli
+yarn cli --help
+```
+
+</Steps>
+
+<Note>
+See [CONTRIBUTING.md](https://github.com/slopus/happy/blob/main/packages/happy-cli/CONTRIBUTING.md) for detailed development setup.
+</Note>
+
+</Tab>
+
+</Tabs>
+
+## Platform-Specific Setup
+
+### macOS
+
+<Steps>
+
+#### Install Node.js
+
+Using Homebrew:
+
+```bash
+brew install node@20
+```
+
+Or download from [nodejs.org](https://nodejs.org/).
+
+#### Install Claude CLI
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+Authenticate Claude:
+
+```bash
+claude login
+```
+
+#### Install Happy
+
+```bash
+npm install -g happy-coder
+```
+
+#### Configure Sleep Prevention (Optional)
+
+Happy automatically prevents your Mac from sleeping during active sessions using the `caffeinate` command. To disable this:
+
+```bash
+export HAPPY_DISABLE_CAFFEINATE=true
+```
+
+</Steps>
+
+<Tip>
+Add environment variables to your `~/.zshrc` or `~/.bash_profile` to make them permanent.
+</Tip>
+
+### Linux
+
+<Steps>
+
+#### Install Node.js
+
+Using package manager:
+
+```bash Ubuntu/Debian
+sudo apt update
+sudo apt install nodejs npm
+
+# Upgrade to Node 20+
+sudo npm install -g n
+sudo n stable
+```
+
+```bash Fedora/RHEL
+sudo dnf install nodejs npm
+```
+
+```bash Arch Linux
+sudo pacman -S nodejs npm
+```
+
+#### Install Claude CLI
+
+```bash
+npm install -g @anthropic-ai/claude-code
+claude login
+```
+
+#### Install Happy
+
+```bash
+npm install -g happy-coder
+```
+
+#### Set Permissions
+
+Ensure the Happy binary is executable:
+
+```bash
+chmod +x $(which happy)
+```
+
+</Steps>
+
+### Windows
+
+<Steps>
+
+#### Install Node.js
+
+Download and install from [nodejs.org](https://nodejs.org/) or use package manager:
+
+```powershell Chocolatey
+choco install nodejs
+```
+
+```powershell Scoop
+scoop install nodejs
+```
+
+#### Install Claude CLI
+
+```powershell
+npm install -g @anthropic-ai/claude-code
+claude login
+```
+
+#### Install Happy
+
+```powershell
+npm install -g happy-coder
+```
+
+</Steps>
+
+<Warning>
+Windows support is experimental. Some features may require WSL2 for optimal performance.
+</Warning>
+
+## Post-Installation Setup
+
+### Verify Installation
+
+Check that all components are working:
+
+```bash
+# Check Happy version
+happy --version
+
+# Check Claude is available
+claude --version
+
+# Run diagnostics
+happy doctor
+```
+
+The `happy doctor` command checks:
+- Node.js version compatibility
+- Claude CLI installation and authentication
+- Happy daemon status
+- File permissions and configuration
+- Network connectivity to Happy servers
+
+### Configure Data Directory
+
+By default, Happy stores data in `~/.happy`. To use a custom location:
+
+```bash
+export HAPPY_HOME_DIR=/path/to/custom/directory
+```
+
+### Connect Mobile App
+
+Download the Happy app:
+
+- **iOS**: [App Store](https://apps.apple.com/us/app/happy-claude-code-client/id6748571505)
+- **Android**: [Google Play](https://play.google.com/store/apps/details?id=com.ex3ndr.happy)
+- **Web**: [app.happy.engineering](https://app.happy.engineering)
+
+Authenticate on first run:
+
+```bash
+happy auth login
+```
+
+Choose authentication method:
+- Scan QR code with mobile app, or
+- Open authentication URL in browser
+
+## Optional Dependencies
+
+### Gemini Support
+
+To use Happy with Gemini:
+
+```bash
+npm install -g @google/gemini-cli
+```
+
+Authenticate with Google:
+
+```bash
+happy connect gemini
+```
+
+For Google Workspace accounts, set up a Google Cloud Project:
+
+```bash
+happy gemini project set your-project-id
+```
+
+<Info>
+See the [Gemini authentication guide](https://goo.gle/gemini-cli-auth-docs#workspace-gca) for detailed setup.
+</Info>
+
+### Bun Runtime (Experimental)
+
+Happy can use Bun as an alternative JavaScript runtime:
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+Use Bun to spawn Claude:
+
+```bash
+happy --js-runtime bun
+```
+
+## Configuration Files
+
+<Accordion title="Configuration File Locations">
+
+Happy stores configuration in these locations:
+
+| File | Location | Purpose |
+|------|----------|----------|
+| Credentials | `~/.happy/access.key` | Authentication credentials |
+| Settings | `~/.happy/settings.json` | User preferences |
+| Logs | `~/.happy/logs/` | Daemon and session logs |
+| Session Data | `~/.happy/sessions/` | Active session state |
+| Daemon State | `~/.happy/daemon.state` | Background service status |
+
+</Accordion>
+
+## Environment Variables
+
+Customize Happy behavior with these environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `HAPPY_SERVER_URL` | Custom server URL | `https://api.cluster-fluster.com` |
+| `HAPPY_WEBAPP_URL` | Custom web app URL | `https://app.happy.engineering` |
+| `HAPPY_HOME_DIR` | Data directory | `~/.happy` |
+| `HAPPY_DISABLE_CAFFEINATE` | Disable macOS sleep prevention | `false` |
+| `HAPPY_EXPERIMENTAL` | Enable experimental features | `false` |
+| `GEMINI_MODEL` | Override default Gemini model | - |
+| `GOOGLE_CLOUD_PROJECT` | Google Cloud Project ID | - |
+
+<Tip>
+Add these to your shell profile (`~/.zshrc`, `~/.bashrc`) to persist across sessions.
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+
+<Accordion title="Command not found: happy">
+
+**Solution**: Ensure npm global bin directory is in your PATH:
+
+```bash
+# Find npm global bin path
+npm config get prefix
+
+# Add to PATH (add to ~/.zshrc or ~/.bashrc)
+export PATH="$PATH:$(npm config get prefix)/bin"
+```
+
+</Accordion>
+
+<Accordion title="Permission denied errors">
+
+**Solution**: Fix npm global permissions:
+
+```bash
+# Create npm global directory
+mkdir -p ~/.npm-global
+npm config set prefix '~/.npm-global'
+
+# Add to PATH
+export PATH=~/.npm-global/bin:$PATH
+
+# Reinstall Happy
+npm install -g happy-coder
+```
+
+</Accordion>
+
+<Accordion title="Claude CLI not found">
+
+**Solution**: Install and authenticate Claude:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+claude login
+
+# Verify installation
+claude --version
+```
+
+</Accordion>
+
+<Accordion title="Daemon won't start">
+
+**Solution**: Check for conflicts and clean up:
+
+```bash
+# Stop existing daemon
+happy daemon stop
+
+# Clean up runaway processes
+happy doctor clean
+
+# Restart daemon
+happy daemon start
+
+# Check status
+happy daemon status
+```
+
+</Accordion>
+
+<Accordion title="Node version too old">
+
+**Solution**: Upgrade Node.js to 20.0.0 or higher:
+
+```bash macOS
+brew upgrade node
+```
+
+```bash Linux (using n)
+sudo npm install -g n
+sudo n stable
+```
+
+```bash Windows
+# Download from nodejs.org or use package manager
+choco upgrade nodejs
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+## Uninstallation
+
+To remove Happy from your system:
+
+<Steps>
+
+### Stop the Daemon
+
+```bash
+happy daemon stop
+```
+
+### Uninstall the Package
+
+<CodeGroup>
+
+```bash npm
+npm uninstall -g happy-coder
+```
+
+```bash yarn
+yarn global remove happy-coder
+```
+
+```bash pnpm
+pnpm remove -g happy-coder
+```
+
+</CodeGroup>
+
+### Remove Configuration (Optional)
+
+```bash
+rm -rf ~/.happy
+```
+
+<Warning>
+This will delete all session data, logs, and authentication credentials.
+</Warning>
+
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+Get started with your first Happy session
+</Card>
+
+<Card title="Authentication" icon="key" href="/guides/authentication">
+Learn about authentication methods and security
+</Card>
+
+<Card title="CLI Reference" icon="terminal" href="/cli/happy">
+Explore all available commands
+</Card>
+
+<Card title="Settings" icon="gear" href="/cli/settings">
+Customize Happy for your workflow
+</Card>
+
+</CardGroup>

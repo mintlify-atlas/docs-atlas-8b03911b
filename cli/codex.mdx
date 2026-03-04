@@ -1,0 +1,261 @@
+---
+title: 'happy codex'
+description: 'Start Codex agent with OpenAI-powered coding assistance'
+icon: 'code'
+---
+
+The `happy codex` command starts a Codex-powered coding agent that provides AI assistance using OpenAI's models.
+
+## Syntax
+
+```bash
+happy codex [options]
+```
+
+## Description
+
+Codex is an AI coding agent that:
+- Uses OpenAI's language models
+- Provides intelligent code suggestions and modifications
+- Executes commands with configurable permissions
+- Supports mobile control and remote sessions
+- Integrates with Happy's MCP (Model Context Protocol) server
+
+<Note>
+  You need to connect your OpenAI API key first using `happy connect codex`.
+</Note>
+
+## Options
+
+<ParamField path="--started-by" type="string">
+  Indicates how the session was started. Options: `daemon` or `terminal`. Internal use
+</ParamField>
+
+<ParamField path="--no-sandbox" type="flag">
+  Disable Happy sandbox for this Codex session
+
+  ```bash
+  happy codex --no-sandbox
+  ```
+</ParamField>
+
+## Setup
+
+Before using Codex, you must connect your OpenAI API key:
+
+```bash
+happy connect codex
+```
+
+This securely stores your API key in Happy cloud with end-to-end encryption.
+
+## Examples
+
+### Start Codex Session
+
+```bash
+happy codex
+```
+
+Launches the Codex agent with default settings.
+
+### Disable Sandbox
+
+```bash
+happy codex --no-sandbox
+```
+
+Runs Codex without OS-level sandboxing restrictions.
+
+### Check Connection Status
+
+```bash
+happy connect status
+```
+
+Verify your OpenAI API key is properly connected:
+
+```
+🔌 Connection Status
+
+  ✓  OpenAI Codex: connected (your-email@example.com)
+  ○  Anthropic Claude: not connected
+  ○  Google Gemini: not connected
+```
+
+## Output
+
+When you start Codex, you'll see an interactive terminal interface:
+
+```
+Starting Codex agent...
+
+[Codex Display]
+╭─ Messages ─────────────────────────────────────╮
+│                                                 │
+│ User: Help me refactor this function           │
+│ Assistant: I'll help you refactor that...       │
+│                                                 │
+╰─────────────────────────────────────────────────╯
+
+Status: Ready
+```
+
+The interface shows:
+- User messages and prompts
+- Assistant responses
+- Tool executions and command outputs
+- Reasoning steps (thinking process)
+- Status updates
+
+## Session Features
+
+### Permission Modes
+
+Codex respects permission modes set from the mobile app:
+- **default**: Ask before executing commands
+- **effective**: Auto-approve safe operations
+- **bypassPermissions**: Auto-approve all operations
+- **yolo**: No permission checks (dangerous)
+
+### Model Selection
+
+You can specify models from the mobile app. Common options:
+- `gpt-4o` (default)
+- `gpt-4-turbo`
+- `gpt-3.5-turbo`
+
+### Reasoning and Tool Use
+
+Codex provides visibility into its thought process:
+
+<CodeGroup>
+```bash Tool Call Example
+Tool: bash started (callId=call_123)
+Executing: ls -la
+Tool: bash completed (callId=call_123)
+Result: [file listing]
+```
+
+```bash Reasoning Example
+[Thinking] Analyzing the code structure to identify optimization opportunities...
+```
+</CodeGroup>
+
+## Session Management
+
+### Remote Control
+
+Control Codex from your mobile device:
+1. Start a Codex session on your computer
+2. Open the Happy mobile app
+3. Send prompts and receive real-time updates
+4. Abort or resume sessions remotely
+
+### Session Resume
+
+Codex automatically handles session continuation:
+- Previous context is preserved
+- Conversation history maintained
+- File modifications tracked
+
+### Abort and Kill
+
+<CodeGroup>
+```bash Abort Current Task
+# From mobile app: tap "Abort" button
+# Stops current inference but keeps session alive
+```
+
+```bash Kill Session
+# From mobile app: tap "Kill" button
+# Terminates entire process
+```
+</CodeGroup>
+
+## MCP Integration
+
+Codex includes Happy's MCP server for enhanced capabilities:
+- Session metadata access
+- Permission management
+- Mobile device communication
+- Real-time updates
+
+The MCP server runs automatically on a random port and bridges to Codex via STDIO.
+
+## Configuration Files
+
+### Codex Home Directory
+
+```
+~/.codex/
+├── sessions/           # Session transcripts
+│   └── <session-id>.jsonl
+└── config/            # Configuration files
+```
+
+### Session Files
+
+Codex stores sessions in JSONL format:
+
+```jsonl
+{"type":"task_started","timestamp":1234567890}
+{"type":"agent_message","message":"I'll help with that..."}
+{"type":"exec_command_begin","command":"ls -la"}
+{"type":"exec_command_end","output":"[results]"}
+```
+
+## Troubleshooting
+
+### Authentication Required
+
+If you see "Not authenticated with Happy":
+
+```bash
+happy auth login
+```
+
+### API Key Not Connected
+
+If Codex fails to start:
+
+```bash
+happy connect codex
+```
+
+Follow the OAuth flow to connect your OpenAI account.
+
+### Check Logs
+
+View detailed logs for debugging:
+
+```bash
+happy doctor
+```
+
+Logs are stored in `~/.happy/logs/` or `~/.happy-dev/logs/`.
+
+### Session Stuck
+
+If a Codex session becomes unresponsive:
+
+```bash
+# Kill runaway processes
+happy doctor clean
+
+# Restart daemon
+happy daemon stop
+happy daemon start
+```
+
+## Related Commands
+
+- [happy connect](/cli/connect) - Connect OpenAI API key
+- [happy sandbox](/cli/sandbox) - Configure sandboxing
+- [happy gemini](/cli/gemini) - Alternative AI agent
+- [happy acp](/cli/acp) - Generic ACP agent runner
+- [happy doctor](/cli/doctor) - System diagnostics
+
+<Warning>
+  Codex requires an active OpenAI account and API access. Usage is billed according to OpenAI's pricing.
+</Warning>

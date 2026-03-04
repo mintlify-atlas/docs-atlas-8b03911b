@@ -1,0 +1,458 @@
+---
+title: 'happy doctor'
+description: 'System diagnostics and troubleshooting for Happy CLI'
+icon: 'stethoscope'
+---
+
+The `happy doctor` command provides comprehensive diagnostics and troubleshooting information for Happy CLI.
+
+## Syntax
+
+```bash
+happy doctor [subcommand]
+```
+
+## Subcommands
+
+### (default)
+
+Run full system diagnostics.
+
+```bash
+happy doctor
+```
+
+Displays comprehensive diagnostic information including version, configuration, authentication status, daemon status, and logs.
+
+### clean
+
+Clean up runaway Happy processes.
+
+```bash
+happy doctor clean
+```
+
+Finds and terminates orphaned or stuck Happy processes.
+
+## Description
+
+The `doctor` command helps diagnose and fix issues with Happy CLI. It provides:
+- **Version information**: CLI and system versions
+- **Configuration details**: Settings and environment
+- **Authentication status**: Credentials and machine registration
+- **Daemon diagnostics**: Process status and health
+- **Process inventory**: All running Happy processes
+- **Log file locations**: Recent logs for debugging
+- **Cleanup utilities**: Remove stuck processes
+
+## Examples
+
+### Run Full Diagnostics
+
+```bash
+happy doctor
+```
+
+Output:
+```
+🩺 Happy CLI Doctor
+
+📋 Basic Information
+Happy CLI Version: 1.0.0
+Platform: darwin arm64
+Node.js Version: v20.10.0
+
+🔧 Daemon Spawn Diagnostics
+Project Root: /Users/username/projects/happy-cli
+Wrapper Script: /Users/username/projects/happy-cli/bin/happy.mjs
+CLI Entrypoint: /Users/username/projects/happy-cli/dist/index.mjs
+Wrapper Exists: ✓ Yes
+CLI Exists: ✓ Yes
+
+⚙️  Configuration
+Happy Home: /Users/username/.happy
+Server URL: https://api.happy-servers.com
+Logs Dir: /Users/username/.happy/logs
+
+🌍 Environment Variables
+HAPPY_HOME_DIR: not set
+HAPPY_SERVER_URL: not set
+DANGEROUSLY_LOG_TO_SERVER: not set
+DEBUG: not set
+NODE_ENV: not set
+
+📄 Settings (settings.json):
+{
+  "machineId": "abc-123-def-456",
+  "sandboxConfig": {
+    "enabled": true,
+    "workspaceRoot": "~/Workspace",
+    "sessionIsolation": "workspace"
+  },
+  "chromeMode": false
+}
+
+🔐 Authentication
+✓ Authenticated (credentials found)
+
+🤖 Daemon Status
+✓ Daemon is running
+  PID: 12345
+  Started: 1/15/2024, 10:30:00 AM
+  CLI Version: 1.0.0
+  HTTP Port: 54321
+
+📄 Daemon State:
+Location: /Users/username/.happy/daemon-state.json
+{
+  "pid": 12345,
+  "startTime": 1705317000000,
+  "startedWithCliVersion": "1.0.0",
+  "httpPort": 54321
+}
+
+🔍 All Happy CLI Processes
+
+📍 Current Process:
+  PID 12350: node /Users/username/projects/happy-cli/bin/happy.mjs doctor
+
+🤖 Daemon:
+  PID 12345: node /Users/username/projects/happy-cli/bin/happy.mjs daemon start-sync
+
+🔗 Daemon-Spawned Sessions:
+  PID 12346: node /Users/username/projects/happy-cli/bin/happy.mjs gemini --started-by daemon
+  PID 12347: node /Users/username/projects/happy-cli/bin/happy.mjs codex --started-by daemon
+
+💡 Process Management
+To clean up runaway processes: happy doctor clean
+
+📝 Log Files
+
+Recent Logs:
+  2024-01-15-10-30-00.log - 1/15/2024, 10:30:00 AM
+    /Users/username/.happy/logs/2024-01-15-10-30-00.log
+  2024-01-15-09-15-00.log - 1/15/2024, 9:15:00 AM
+    /Users/username/.happy/logs/2024-01-15-09-15-00.log
+
+Daemon Logs:
+  2024-01-15-10-29-50-daemon.log - 1/15/2024, 10:29:50 AM
+    /Users/username/.happy/logs/2024-01-15-10-29-50-daemon.log
+  2024-01-14-18-45-30-daemon.log - 1/14/2024, 6:45:30 PM
+    /Users/username/.happy/logs/2024-01-14-18-45-30-daemon.log
+
+🐛 Support & Bug Reports
+Report issues: https://github.com/slopus/happy-cli/issues
+Documentation: https://happy.engineering/
+
+✅ Doctor diagnosis complete!
+```
+
+### Clean Up Runaway Processes
+
+```bash
+happy doctor clean
+```
+
+Output:
+```
+Cleaned up 3 runaway processes
+```
+
+Or if errors occur:
+```
+Cleaned up 2 runaway processes
+Errors: [
+  "Failed to kill process 12348: Permission denied"
+]
+```
+
+### Daemon-Only Diagnostics
+
+Internal command for daemon-specific diagnostics:
+
+```bash
+happy daemon status
+```
+
+This runs `happy doctor` with a daemon filter, showing only daemon-related information.
+
+## Diagnostic Information
+
+### Basic Information
+
+- **Happy CLI Version**: Installed version of Happy
+- **Platform**: Operating system and architecture
+- **Node.js Version**: Runtime version
+
+### Daemon Spawn Diagnostics
+
+- **Project Root**: Source code location
+- **Wrapper Script**: Path to `happy.mjs` entry point
+- **CLI Entrypoint**: Compiled JavaScript entry point
+- **File existence**: Verification that required files exist
+
+### Configuration
+
+- **Happy Home**: Data directory location
+- **Server URL**: API endpoint
+- **Logs Dir**: Log file directory
+
+### Environment Variables
+
+Checks for:
+- `HAPPY_HOME_DIR`: Custom data directory
+- `HAPPY_SERVER_URL`: Custom server URL
+- `DANGEROUSLY_LOG_TO_SERVER`: Debug logging flag
+- `DEBUG`: Debug mode
+- `NODE_ENV`: Node environment
+
+### Settings
+
+Displays contents of `settings.json`:
+- Machine ID
+- Sandbox configuration
+- Chrome mode setting
+- Other preferences
+
+### Authentication
+
+Checks for valid credentials in `access.key`:
+- ✓ Authenticated: Credentials found
+- ⚠️ Not authenticated: No credentials
+- ❌ Error: Failed to read credentials
+
+### Daemon Status
+
+Daemon process information:
+- Running status
+- Process ID (PID)
+- Start time
+- CLI version used to start daemon
+- HTTP control port
+- Daemon state file contents
+
+### Process Inventory
+
+All Happy-related processes grouped by type:
+
+<ParamField path="Current Process" type="group">
+  The `happy doctor` process itself
+</ParamField>
+
+<ParamField path="Daemon" type="group">
+  Background daemon processes
+</ParamField>
+
+<ParamField path="Daemon-Spawned Sessions" type="group">
+  Sessions started by the daemon (remote sessions)
+</ParamField>
+
+<ParamField path="User Sessions" type="group">
+  Sessions started directly from terminal
+</ParamField>
+
+<ParamField path="Dev Related" type="group">
+  Development mode processes (from source)
+</ParamField>
+
+<ParamField path="Doctor" type="group">
+  Other doctor processes
+</ParamField>
+
+<ParamField path="Unknown" type="group">
+  Happy processes that couldn't be categorized
+</ParamField>
+
+### Log Files
+
+Recent log files with paths:
+- **Regular logs**: Session and command logs
+- **Daemon logs**: Daemon-specific logs
+- Sorted by modification time (newest first)
+
+## Cleaning Runaway Processes
+
+The `clean` subcommand identifies and terminates:
+
+- **Orphaned sessions**: Sessions without parent process
+- **Stuck daemons**: Daemon processes that didn't exit cleanly
+- **Zombie processes**: Completed processes still in process table
+- **Duplicate processes**: Multiple instances that shouldn't exist
+
+### What Gets Cleaned
+
+<CodeGroup>
+```bash Safe to Clean
+# Orphaned daemon (no PID match)
+# Stuck version check processes
+# Zombie Happy processes
+# Old daemon instances
+```
+
+```bash Never Cleaned
+# Current happy doctor process
+# Recently started processes (< 5 seconds)
+# Processes with active network connections
+```
+</CodeGroup>
+
+### When to Clean
+
+Run `happy doctor clean` when:
+- Sessions won't start (port conflicts)
+- Daemon won't start (stale PID)
+- System feels sluggish (too many processes)
+- After crashes or forced terminations
+- Before major version updates
+
+## Troubleshooting Workflows
+
+### Authentication Issues
+
+```bash
+# 1. Check status
+happy doctor | grep -A 5 "Authentication"
+
+# 2. Re-authenticate if needed
+happy auth login --force
+
+# 3. Verify
+happy auth status
+```
+
+### Daemon Won't Start
+
+```bash
+# 1. Check daemon status
+happy daemon status
+
+# 2. Clean stuck processes
+happy doctor clean
+
+# 3. Remove stale state
+rm ~/.happy/daemon-state.json
+
+# 4. Start fresh
+happy daemon start
+
+# 5. Verify
+happy daemon status
+```
+
+### Session Won't Start
+
+```bash
+# 1. Full diagnostics
+happy doctor
+
+# 2. Check for conflicts
+happy doctor | grep "Session"
+
+# 3. Clean up
+happy doctor clean
+
+# 4. Check logs
+tail -f $(ls -t ~/.happy/logs/*.log | head -1)
+
+# 5. Try again
+happy
+```
+
+### Version Mismatch
+
+```bash
+# 1. Check versions
+happy doctor | grep Version
+
+# 2. Stop daemon
+happy daemon stop
+
+# 3. Update Happy
+npm install -g @happy/cli  # or your install method
+
+# 4. Start fresh
+happy daemon start
+
+# 5. Verify
+happy --version
+```
+
+### Log Analysis
+
+```bash
+# 1. Find logs
+happy doctor | grep -A 10 "Log Files"
+
+# 2. View latest
+tail -100 $(ls -t ~/.happy/logs/*.log | head -1)
+
+# 3. Search for errors
+grep -i error ~/.happy/logs/*.log
+
+# 4. Filter by date
+ls -lt ~/.happy/logs/2024-01-15*.log
+```
+
+## Debug Mode
+
+Enable debug logging for more detailed diagnostics:
+
+```bash
+DEBUG=* happy doctor
+```
+
+This will:
+- Output debug logs to console
+- Create detailed log files
+- Show internal state transitions
+- Display network requests
+
+<Warning>
+  Debug mode produces verbose output. Use only for troubleshooting.
+</Warning>
+
+## Understanding Output
+
+### Color Coding
+
+- 🟢 Green: Success, working correctly
+- 🟡 Yellow: Warning, may need attention
+- 🔴 Red: Error, needs fixing
+- ⚪ Gray: Informational
+
+### Status Indicators
+
+- `✓` - Success/Enabled
+- `✗` - Failure/Disabled
+- `⚠️` - Warning/Attention needed
+- `○` - Not configured/Not connected
+
+## Sharing Diagnostics
+
+When reporting issues:
+
+```bash
+# Capture full diagnostics
+happy doctor > happy-diagnostics.txt
+
+# Remove sensitive data (machine ID, tokens)
+sed -i '' 's/"machineId": "[^"]*"/"machineId": "REDACTED"/g' happy-diagnostics.txt
+sed -i '' 's/Token: .*/Token: REDACTED/g' happy-diagnostics.txt
+
+# Share on GitHub issue
+cat happy-diagnostics.txt
+```
+
+<Warning>
+  Always review diagnostics output before sharing. Remove sensitive information like tokens, machine IDs, and paths with personal information.
+</Warning>
+
+## Related Commands
+
+- [happy daemon](/cli/daemon) - Daemon management and status
+- [happy auth](/cli/auth) - Authentication diagnostics
+- [happy sandbox](/cli/sandbox) - Sandbox configuration
+
+<Note>
+  Run `happy doctor` whenever you encounter issues. It provides the information needed for troubleshooting or reporting bugs.
+</Note>

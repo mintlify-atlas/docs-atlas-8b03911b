@@ -1,0 +1,312 @@
+---
+title: Project Structure
+description: Understanding the Happy Development monorepo architecture
+---
+
+## Monorepo Overview
+
+Happy Development is organized as a Yarn workspaces monorepo with five main packages. The project uses Yarn 1.22.22 for package management.
+
+```
+happy/
+├── packages/
+│   ├── happy-app/      # Mobile & web client (React Native + Expo)
+│   ├── happy-cli/      # Command-line wrapper for Claude Code/Codex
+│   ├── happy-agent/    # Remote agent control CLI
+│   ├── happy-server/   # Backend server with Prisma
+│   └── happy-wire/     # Shared types and Zod schemas
+├── scripts/            # Build and release scripts
+├── package.json        # Root workspace configuration
+└── yarn.lock          # Dependency lock file
+```
+
+## Package Details
+
+### happy-app
+
+**Purpose**: Mobile and web client for controlling AI coding agents remotely
+
+**Technology Stack**:
+- React Native 0.81.4 with React 19.1.0
+- Expo SDK 54
+- TypeScript 5.9.3
+- Unistyles for cross-platform styling
+- Socket.io for real-time communication
+- libsodium for end-to-end encryption
+- LiveKit for voice communication
+
+**Directory Structure**:
+```
+happy-app/
+├── sources/
+│   ├── app/              # Expo Router screens (file-based routing)
+│   ├── auth/             # QR code authentication logic
+│   ├── components/       # Reusable UI components
+│   ├── sync/             # Real-time sync engine with encryption
+│   ├── text/             # Internationalization (i18n) translations
+│   └── utils/            # Utility functions
+├── src-tauri/            # Tauri configuration for macOS desktop app
+├── public/               # Static assets for web
+└── package.json
+```
+
+**Key Features**:
+- Cross-platform: iOS, Android, Web, macOS (via Tauri)
+- End-to-end encrypted session sync
+- QR code-based authentication
+- Real-time voice sessions with LiveKit
+- Multi-language support (EN, RU, PL, ES, CA, IT, PT, JA, ZH)
+
+**Build Targets**:
+- Development, Preview, and Production variants
+- Native builds via EAS (Expo Application Services)
+- Web builds via Expo for Web
+- macOS desktop via Tauri
+
+### happy-cli
+
+**Purpose**: CLI wrapper for Claude Code and Codex enabling remote control
+
+**Technology Stack**:
+- Node.js 20+ with TypeScript
+- Socket.io for real-time sync
+- TweetNaCl for cryptography
+- Ink for terminal UI
+- Zod for validation
+- Vitest for testing
+
+**Directory Structure**:
+```
+happy-cli/
+├── src/
+│   ├── agent/            # Agent backend adapters (ACP, etc.)
+│   ├── api/              # API client and session management
+│   ├── claude/           # Claude Code integration
+│   ├── codex/            # Codex integration
+│   ├── daemon/           # Background daemon management
+│   ├── sandbox/          # Sandbox environment configuration
+│   ├── ui/               # Terminal UI components
+│   ├── utils/            # Utility functions
+│   └── index.ts          # CLI entry point
+├── bin/
+│   ├── happy.mjs         # Main CLI binary
+│   └── happy-mcp.mjs     # MCP server binary
+├── scripts/              # Setup and build scripts
+├── tools/                # Bundled tools (ripgrep, difftastic)
+└── package.json
+```
+
+**Key Features**:
+- Dual mode: interactive (local terminal) and remote (mobile control)
+- Background daemon for persistent sessions
+- End-to-end encryption for all communications
+- Permission interception via MCP (Model Context Protocol)
+- Session persistence and resumption
+- Support for both Claude Code and Codex
+
+**Commands**:
+- `happy` - Start Claude Code session
+- `happy codex` - Start Codex session
+- `happy daemon start/stop/status` - Manage background daemon
+- `happy auth` - Authenticate with server
+- `happy doctor` - Diagnose issues
+
+### happy-agent
+
+**Purpose**: Remote CLI for creating and monitoring agent sessions
+
+**Technology Stack**:
+- Node.js 20+ with TypeScript
+- Socket.io client
+- TweetNaCl for encryption
+- Commander for CLI parsing
+
+**Directory Structure**:
+```
+happy-agent/
+├── src/
+│   ├── auth.ts           # Authentication
+│   ├── session.ts        # Session management
+│   ├── api.ts            # API client
+│   └── index.ts          # Entry point
+├── bin/
+│   └── happy-agent.mjs   # CLI binary
+└── package.json
+```
+
+**Key Features**:
+- Create remote agent sessions
+- Monitor session output
+- Send commands to running agents
+- End-to-end encrypted communication
+
+### happy-server
+
+**Purpose**: Backend server handling authentication, session sync, and data persistence
+
+**Technology Stack**:
+- Node.js 20 with TypeScript
+- Fastify 5 web framework
+- Prisma ORM with PostgreSQL
+- Redis for caching and pub/sub
+- Socket.io for real-time communication
+- MinIO for S3-compatible storage
+- Zod for validation
+
+**Directory Structure**:
+```
+happy-server/
+├── sources/
+│   ├── app/              # Application entry points
+│   │   └── api/          # API server
+│   │       ├── routes/   # HTTP routes
+│   │       └── socket/   # Socket.io handlers
+│   ├── modules/          # Reusable modules
+│   ├── services/         # Core services (pubsub, etc.)
+│   ├── storage/          # Database utilities
+│   ├── utils/            # Low-level utilities
+│   └── main.ts           # Main entry point
+├── prisma/
+│   ├── schema.prisma     # Database schema
+│   └── migrations/       # Database migrations
+└── package.json
+```
+
+**Key Features**:
+- RESTful API with Zod validation
+- WebSocket real-time updates
+- End-to-end encrypted session storage
+- Multi-tenant architecture
+- Redis-based event bus
+- Push notification support (Expo)
+
+**Architecture Principles**:
+- 4 spaces for indentation
+- Functional and declarative patterns (avoid classes)
+- Absolute imports with `@/` prefix
+- Idempotent operations for reliability
+- Transaction-wrapped database operations
+
+### happy-wire
+
+**Purpose**: Shared type definitions and Zod schemas for type-safe communication
+
+**Technology Stack**:
+- TypeScript
+- Zod for schema validation
+- Dual CJS/ESM builds via pkgroll
+
+**Directory Structure**:
+```
+happy-wire/
+├── src/
+│   ├── messages.ts        # Message type definitions
+│   ├── sessionProtocol.ts # Session protocol schemas
+│   └── index.ts           # Main exports
+└── package.json
+```
+
+**Key Features**:
+- Type-safe message contracts
+- Runtime validation with Zod
+- Shared between CLI, app, agent, and server
+- Dual module format (CJS + ESM)
+
+## Build System
+
+### Root Commands
+
+```bash
+# Run CLI from source
+yarn cli
+
+# Run web app from source
+yarn web
+
+# Release all packages
+yarn release
+```
+
+### Workspace Configuration
+
+The root `package.json` defines the workspace structure:
+
+```json
+{
+  "workspaces": {
+    "packages": [
+      "packages/happy-app",
+      "packages/happy-agent",
+      "packages/happy-cli",
+      "packages/happy-server",
+      "packages/happy-wire"
+    ],
+    "nohoist": [
+      "**/zod",
+      "**/react",
+      "**/react-dom",
+      "**/react-native",
+      "**/react-native/**"
+    ]
+  }
+}
+```
+
+The `nohoist` configuration ensures certain dependencies are installed locally in each package to avoid version conflicts.
+
+## Dependency Graph
+
+```
+happy-app ─────┐
+               ├──> happy-wire
+happy-cli ─────┤
+               │
+happy-agent ───┤
+               │
+happy-server ──┘
+```
+
+All four main packages depend on `happy-wire` for shared types and schemas.
+
+## TypeScript Configuration
+
+Each package has its own `tsconfig.json` with:
+- TypeScript 5.9.3
+- Strict mode enabled
+- Path aliases (e.g., `@/` maps to `./src` or `./sources`)
+
+## Testing Strategy
+
+All packages use Vitest for testing:
+- Unit tests: `*.test.ts` files
+- Spec tests: `*.spec.ts` files  
+- Integration tests: `*.integration.test.ts` files
+
+Test files are colocated with source files.
+
+## Code Style
+
+### happy-app
+- 4 spaces for indentation
+- React functional components with hooks
+- Unistyles for styling (not inline styles)
+- Internationalization via `t()` function
+
+### happy-cli
+- Strict TypeScript with comprehensive JSDoc
+- No classes, prefer functions
+- File-based logging (no console in library code)
+- All imports use `@/` prefix
+
+### happy-server
+- 4 spaces for indentation
+- Functional programming patterns
+- Transaction-wrapped database operations
+- Absolute imports with `@/` prefix
+- Utility functions named same as filename
+
+## Next Steps
+
+- Learn how to [build the project](/development/building)
+- Set up [testing](/development/testing)
+- Read the [setup guide](/development/setup) for development environment configuration

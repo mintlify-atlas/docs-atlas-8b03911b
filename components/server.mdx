@@ -1,0 +1,339 @@
+---
+title: "Server (happy-server)"
+description: "Fastify-based backend API with WebSocket support and end-to-end encryption"
+icon: "server"
+---
+
+The Happy server is a Node.js backend built with Fastify that provides REST APIs, WebSocket communication, and real-time synchronization for all Happy clients. It handles authentication, session management, machine coordination, and encrypted data storage.
+
+## Overview
+
+The server provides:
+
+- RESTful API for CRUD operations
+- WebSocket server for real-time updates
+- End-to-end encrypted data storage
+- Machine and session coordination
+- RPC routing between clients and machines
+- Voice communication orchestration
+
+## Technology Stack
+
+<CardGroup cols={2}>
+  <Card title="Fastify 5" icon="bolt">
+    High-performance web framework with type-safe routing via Zod schemas
+  </Card>
+  <Card title="PostgreSQL + Prisma" icon="database">
+    Prisma ORM for type-safe database access with migrations
+  </Card>
+  <Card title="Socket.IO" icon="tower-broadcast">
+    Real-time WebSocket communication with Redis adapter for clustering
+  </Card>
+  <Card title="Redis" icon="memory">
+    Event bus, caching, and distributed locking across server instances
+  </Card>
+</CardGroup>
+
+## Architecture
+
+### Directory Structure
+
+```
+sources/
+├── app/              # Application-specific logic
+│   ├── api/          # Fastify REST API routes
+│   │   ├── routes/   # API endpoint definitions
+│   │   ├── socket.ts # Socket.IO server setup
+│   │   └── api.ts    # Fastify app initialization
+│   ├── auth/         # Authentication logic
+│   ├── session/      # Session management
+│   ├── presence/     # Machine presence and timeouts
+│   ├── monitoring/   # Metrics and observability
+│   └── social/       # User profiles and friends
+├── modules/          # Reusable modules (non-app logic)
+│   ├── eventbus/     # Event bus (local + Redis)
+│   ├── lock/         # Distributed locking
+│   ├── media/        # Media processing
+│   └── ai/           # AI service wrappers
+├── storage/          # Database and storage
+│   ├── db.ts         # Prisma client
+│   ├── inTx.ts       # Transaction wrapper
+│   └── files.ts      # File storage (S3/local)
+├── utils/            # Utility functions
+└── main.ts           # Entry point
+```
+
+### Core Design Principles
+
+1. **4-space indentation** (not 2 spaces)
+2. **Functional programming**: Avoid classes, prefer pure functions
+3. **Strict typing**: All code fully typed, no `any`
+4. **Absolute imports**: Use `@/` prefix (e.g., `import { log } from '@/utils/log'`)
+5. **Modular architecture**: Modules abstract complexity, apps contain business logic
+6. **Idempotent operations**: All API operations handle duplicate requests gracefully
+
+## Key Features
+
+### Authentication
+
+Challenge-response authentication with TweetNaCl:
+
+1. Client requests auth challenge
+2. Server generates random challenge
+3. Client signs challenge with private key
+4. Server verifies signature with public key
+5. Server issues JWT token
+
+<Note>
+  No passwords are ever stored or transmitted. Authentication is purely cryptographic.
+</Note>
+
+### Session Management
+
+Sessions are encrypted on the server:
+
+- **Metadata**: Public session info (title, created time, machine)
+- **Messages**: End-to-end encrypted message content
+- **Agent State**: Encrypted agent-specific state
+- **Artifacts**: Encrypted code artifacts and outputs
+
+### Real-time Updates
+
+Socket.IO broadcasts state changes:
+
+```typescript
+// Update event structure
+{
+  id: 'update-id-xyz',
+  seq: 456,
+  body: {
+    t: 'new-session' | 'update-session' | 'new-message' | 'update-machine',
+    // ... type-specific fields
+  },
+  createdAt: 1703001244567
+}
+```
+
+Clients receive real-time updates for:
+- New sessions created
+- Session metadata changes
+- New messages
+- Machine status changes
+- Daemon state updates
+
+### RPC System
+
+Bidirectional RPC between clients:
+
+```typescript
+// Mobile app -> Server -> CLI daemon
+socket.emit('rpc-call', {
+  method: 'machine-uuid-123:spawn-happy-session',
+  params: 'base64(encrypted({...}))',
+}, callback)
+
+// Server routes to correct machine WebSocket
+// CLI daemon processes and responds via callback
+```
+
+## API Routes
+
+<AccordionGroup>
+  <Accordion title="Authentication (/v1/auth)">
+    - `POST /v1/auth/request` - Request auth challenge
+    - `POST /v1/auth/response` - Submit signed challenge
+    - `GET /v1/auth/me` - Get current user info
+  </Accordion>
+
+  <Accordion title="Sessions (/v1/sessions)">
+    - `GET /v1/sessions` - List user sessions
+    - `POST /v1/sessions` - Create new session
+    - `GET /v1/sessions/:id` - Get session details
+    - `POST /v1/sessions/:id` - Update session metadata
+    - `DELETE /v1/sessions/:id` - Delete session
+    - `GET /v1/sessions/:id/messages` - Get messages
+    - `POST /v1/sessions/:id/messages` - Send messages
+  </Accordion>
+
+  <Accordion title="Machines (/v1/machines)">
+    - `GET /v1/machines` - List user machines
+    - `POST /v1/machines` - Register new machine
+    - `GET /v1/machines/:id` - Get machine details
+    - `POST /v1/machines/:id/metadata` - Update metadata
+    - `POST /v1/machines/:id/state` - Update daemon state
+  </Accordion>
+
+  <Accordion title="Voice (/v1/voice)">
+    - `POST /v1/voice/token` - Get LiveKit token
+    - `POST /v1/voice/session` - Create voice session
+  </Accordion>
+
+  <Accordion title="Artifacts (/v1/artifacts)">
+    - `GET /v1/sessions/:id/artifacts` - List artifacts
+    - `POST /v1/sessions/:id/artifacts` - Create artifact
+    - `GET /v1/artifacts/:id` - Get artifact
+    - `POST /v1/artifacts/:id` - Update artifact
+  </Accordion>
+</AccordionGroup>
+
+## Core Dependencies
+
+```json
+{
+  "fastify": "^5.2.0",
+  "fastify-type-provider-zod": "^4.0.2",
+  "@prisma/client": "^6.11.1",
+  "socket.io": "^4.8.1",
+  "@socket.io/redis-streams-adapter": "^0.2.2",
+  "ioredis": "^5.6.1",
+  "tweetnacl": "^1.0.3",
+  "zod": "3.25.76",
+  "@slopus/happy-wire": "^0.1.0",
+  "jsonwebtoken": "^9.0.2"
+}
+```
+
+## Scripts
+
+<AccordionGroup>
+  <Accordion title="Development">
+    - `yarn dev` - Start with auto-reload (kills port 3005 first)
+    - `yarn start` - Start production server
+    - `yarn standalone` - Start standalone server (embedded PGlite)
+    - `yarn build` - TypeScript type checking
+    - `yarn test` - Run Vitest tests
+  </Accordion>
+
+  <Accordion title="Database">
+    - `yarn migrate` - Run Prisma migrations
+    - `yarn migrate:reset` - Reset database
+    - `yarn generate` - Generate Prisma client
+    - `yarn db` - Start local PostgreSQL in Docker
+  </Accordion>
+
+  <Accordion title="Infrastructure">
+    - `yarn redis` - Start Redis in Docker
+    - `yarn s3` - Start MinIO (S3-compatible) in Docker
+    - `yarn s3:init` - Initialize S3 buckets
+  </Accordion>
+</AccordionGroup>
+
+## Database Schema
+
+Key Prisma models:
+
+```prisma
+model User {
+  id            String    @id
+  publicKey     String    @unique
+  secretKey     String    // Encrypted
+  sessions      Session[]
+  machines      Machine[]
+}
+
+model Machine {
+  id             String   @id
+  userId         String
+  metadata       String   // Encrypted
+  metadataVersion Int
+  daemonState    String   // Encrypted
+  daemonStateVersion Int
+  active         Boolean
+  lastActiveAt   DateTime
+}
+
+model Session {
+  id            String    @id
+  userId        String
+  machineId     String?
+  metadata      String    // Encrypted
+  metadataVersion Int
+  agentState    String?   // Encrypted
+  agentStateVersion Int
+  messages      Message[]
+}
+
+model Message {
+  id        String   @id
+  sessionId String
+  seq       Int      // Sequential ordering
+  content   String   // Encrypted
+}
+```
+
+## Event Bus
+
+The event bus enables communication between modules:
+
+```typescript
+import { eventbus } from '@/modules/eventbus'
+
+// Emit event
+eventbus.emit('session-created', { sessionId, userId })
+
+// Subscribe to events
+eventbus.on('session-created', (data) => {
+  // Handle event
+})
+```
+
+Supports:
+- Local events (single process)
+- Redis-backed events (cluster-wide)
+- Typed event schemas
+
+## Monitoring
+
+Prometheus metrics exposed:
+
+- HTTP request latency
+- WebSocket connection count
+- Database query performance
+- Active session count
+- Error rates
+
+## Deployment
+
+### Docker
+
+```dockerfile
+# Multi-stage build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN yarn install && yarn build
+
+FROM node:20-alpine
+RUN apk add --no-cache ffmpeg python3
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+EXPOSE 3000
+CMD ["node", "dist/main.js"]
+```
+
+### Environment Variables
+
+```bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/happy
+REDIS_URL=redis://localhost:6379
+S3_ENDPOINT=https://s3.amazonaws.com
+S3_BUCKET=happy-files
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
+```
+
+## Design Philosophy
+
+1. **Modules over apps**: Abstract complexity into reusable modules
+2. **Idempotency**: All operations handle duplicate requests
+3. **No backward compatibility**: Move fast with clean migrations
+4. **Transaction safety**: Use `inTx` for atomic operations
+5. **Event-driven**: Use event bus for cross-module communication
+6. **Type safety**: Zod schemas for all API boundaries
+
+## Related Components
+
+- [CLI](/components/cli) - Command-line daemon that connects to server
+- [Mobile App](/components/mobile-app) - Mobile client
+- [Agent](/components/agent) - Remote control CLI

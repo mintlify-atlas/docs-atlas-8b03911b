@@ -1,0 +1,234 @@
+---
+title: 'happy'
+description: 'Start Claude Code with mobile control and remote session management'
+icon: 'terminal'
+---
+
+The main `happy` command starts Claude Code with mobile control capabilities, allowing you to interact with Claude from your mobile device and manage sessions remotely.
+
+## Syntax
+
+```bash
+happy [options]
+```
+
+## Description
+
+Happy wraps Claude Code to enable:
+- Remote control from mobile devices
+- Session persistence and resumption
+- Background daemon management
+- Mobile notifications
+- End-to-end encrypted communication
+
+<Note>
+  Happy supports ALL Claude Code options! Any flag you can use with `claude` works with `happy`.
+</Note>
+
+## Options
+
+<ParamField path="--help" type="flag">
+  Show help information including both Happy and Claude Code options
+</ParamField>
+
+<ParamField path="--version" type="flag">
+  Display Happy CLI version information
+</ParamField>
+
+<ParamField path="--yolo" type="flag">
+  Shortcut for `--dangerously-skip-permissions`. Bypasses all permission prompts (use with caution)
+</ParamField>
+
+<ParamField path="--chrome" type="flag">
+  Enable Chrome browser access for this session. Allows Claude to control your browser
+</ParamField>
+
+<ParamField path="--no-chrome" type="flag">
+  Disable Chrome even if it's enabled by default in settings
+</ParamField>
+
+<ParamField path="--no-sandbox" type="flag">
+  Disable Happy sandbox for this session. Useful when you need unrestricted file system access
+</ParamField>
+
+<ParamField path="--js-runtime" type="string">
+  JavaScript runtime to use for spawning Claude Code. Options: `node` (default) or `bun`
+
+  ```bash
+  happy --js-runtime bun
+  ```
+</ParamField>
+
+<ParamField path="--claude-env" type="string">
+  Pass environment variables to Claude in KEY=VALUE format. Can be used multiple times
+
+  ```bash
+  happy --claude-env ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+  ```
+</ParamField>
+
+<ParamField path="--happy-starting-mode" type="string">
+  Internal flag for Happy daemon. Options: `local` or `remote`. Not typically used directly by users
+</ParamField>
+
+<ParamField path="--started-by" type="string">
+  Internal flag indicating session origin. Options: `daemon` or `terminal`. Not typically used directly by users
+</ParamField>
+
+<Warning>
+  The `--settings` flag is reserved by Happy for session tracking. Your custom settings file will be ignored. Configure Claude via `~/.claude/settings.json` instead.
+</Warning>
+
+## Claude Code Options
+
+Happy passes all unknown flags directly to Claude Code. Popular options include:
+
+<ParamField path="--resume" type="string">
+  Resume a previous Claude session by session ID
+
+  ```bash
+  happy --resume aada10c6-9299-4c45-abc4-91db9c0f935d
+  ```
+</ParamField>
+
+<ParamField path="--dangerously-skip-permissions" type="flag">
+  Skip all permission prompts (use `--yolo` for short)
+</ParamField>
+
+<ParamField path="--print" type="flag">
+  Print mode for non-interactive usage
+</ParamField>
+
+<ParamField path="--output-format" type="string">
+  Output format for print mode. Options: `stream-json`, `text`
+</ParamField>
+
+<ParamField path="--verbose" type="flag">
+  Enable verbose logging from Claude Code
+</ParamField>
+
+## Examples
+
+### Start a Basic Session
+
+```bash
+happy
+```
+
+Starts Claude Code with mobile control enabled.
+
+### Start with Permission Bypass
+
+```bash
+happy --yolo
+```
+
+Starts Claude without permission prompts (equivalent to `--dangerously-skip-permissions`).
+
+### Enable Browser Access
+
+```bash
+happy --chrome
+```
+
+Allows Claude to interact with your Chrome browser.
+
+### Use Custom API Endpoint
+
+<CodeGroup>
+```bash Local Router
+happy --claude-env ANTHROPIC_BASE_URL=http://127.0.0.1:3456
+```
+
+```bash Proxy Server
+happy --claude-env ANTHROPIC_BASE_URL=https://api.example.com
+```
+</CodeGroup>
+
+Useful for routing Claude requests through a local proxy or custom endpoint.
+
+### Resume Previous Session
+
+```bash
+happy --resume aada10c6-9299-4c45-abc4-91db9c0f935d
+```
+
+Continues a previous Claude session. The session ID can be found in Claude's session files.
+
+### Use Bun Runtime
+
+```bash
+happy --js-runtime bun
+```
+
+Spawns Claude Code using Bun instead of Node.js for potentially faster startup.
+
+### Disable Sandbox
+
+```bash
+happy --no-sandbox
+```
+
+Disables Happy's OS-level sandboxing for this session.
+
+### Combine Multiple Options
+
+```bash
+happy --chrome --yolo --js-runtime bun
+```
+
+Starts Claude with browser access, no permission prompts, using Bun runtime.
+
+## Output
+
+When you start Happy, you'll see:
+
+```
+Authentication Status
+✓ Authenticated
+
+Daemon Status
+✓ Daemon is running
+
+Starting Claude Code session...
+[Claude Code interface appears]
+```
+
+The Happy daemon runs in the background and automatically manages:
+- Session persistence
+- Mobile notifications
+- Remote control connections
+- Keep-alive signals
+
+## Session Files
+
+Claude sessions are stored in:
+- `~/.claude/projects/<project-hash>/<session-id>.jsonl`
+
+Happy configuration is stored in:
+- `~/.happy/` (production) or `~/.happy-dev/` (development)
+
+## Background Daemon
+
+The Happy daemon automatically starts when you run any Happy command. To manage it manually:
+
+```bash
+happy daemon start   # Start daemon
+happy daemon stop    # Stop daemon
+happy daemon status  # Check daemon status
+```
+
+See [happy daemon](/cli/daemon) for more details.
+
+## Related Commands
+
+- [happy auth](/cli/auth) - Authentication management
+- [happy daemon](/cli/daemon) - Daemon management
+- [happy sandbox](/cli/sandbox) - Configure sandboxing
+- [happy codex](/cli/codex) - Start Codex mode
+- [happy gemini](/cli/gemini) - Start Gemini mode
+- [happy doctor](/cli/doctor) - System diagnostics
+
+<Note>
+  Happy requires authentication before starting sessions. Run `happy auth login` if you haven't authenticated yet.
+</Note>

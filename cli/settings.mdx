@@ -1,0 +1,226 @@
+---
+title: "Settings"
+description: "Configure Happy CLI settings and directory structure"
+icon: "gear"
+---
+
+Happy CLI stores all configuration files and data in the `~/.happy/` directory (or a custom location set via `HAPPY_HOME_DIR`).
+
+## Directory Structure
+
+Happy uses the following directory structure for storing configuration and runtime data:
+
+```
+~/.happy/
+├── settings.json          # Main configuration file
+├── access.key            # Authentication credentials
+├── daemon.state.json     # Daemon process state
+├── daemon.state.json.lock # Lock file for daemon state
+└── logs/                 # Log files directory
+    └── YYYY-MM-DD-HH-MM-SS-daemon.log
+```
+
+### Custom Home Directory
+
+You can customize the location of the Happy home directory using the `HAPPY_HOME_DIR` environment variable:
+
+```bash
+export HAPPY_HOME_DIR=~/.happy-dev
+happy
+```
+
+## Configuration Files
+
+### settings.json
+
+The main configuration file stores all Happy CLI settings. This file is automatically created on first run.
+
+**Schema version:** `2`
+
+**Key settings:**
+
+<ResponseField name="schemaVersion" type="number" default="2">
+  Schema version for backwards compatibility
+</ResponseField>
+
+<ResponseField name="onboardingCompleted" type="boolean" default="false">
+  Whether initial onboarding has been completed
+</ResponseField>
+
+<ResponseField name="machineId" type="string">
+  Unique identifier for this machine (used for server operations)
+</ResponseField>
+
+<ResponseField name="machineIdConfirmedByServer" type="boolean">
+  Whether the machine ID has been confirmed by the Happy server
+</ResponseField>
+
+<ResponseField name="daemonAutoStartWhenRunningHappy" type="boolean">
+  Whether to automatically start the daemon when running Happy
+</ResponseField>
+
+<ResponseField name="chromeMode" type="boolean" default="false">
+  Default Chrome mode setting for Claude sessions (enables browser access)
+</ResponseField>
+
+<ResponseField name="activeProfileId" type="string">
+  ID of the currently active AI backend profile
+</ResponseField>
+
+<ResponseField name="profiles" type="AIBackendProfile[]" default="[]">
+  Array of AI backend profiles (synced with Happy app)
+</ResponseField>
+
+<ResponseField name="sandboxConfig" type="SandboxConfig">
+  OS-level sandbox configuration. See [Sandbox Configuration](#sandbox-configuration)
+</ResponseField>
+
+<ResponseField name="localEnvironmentVariables" type="Record<string, Record<string, string>>" default="{}">
+  CLI-local environment variable cache (not synced with app)
+</ResponseField>
+
+### access.key
+
+Stores authentication credentials in JSON format. This file contains:
+
+- `token`: Authentication token for Happy server
+- `encryption`: Encryption keys for secure communication
+  - `publicKey`: Public encryption key (base64)
+  - `machineKey`: Machine-specific encryption key (base64)
+
+<Warning>
+  Never share your `access.key` file. It contains sensitive authentication data.
+</Warning>
+
+### daemon.state.json
+
+Tracks the state of the Happy daemon process:
+
+```json
+{
+  "pid": 12345,
+  "httpPort": 3456,
+  "startTime": "2026-03-04T10:30:00.000Z",
+  "startedWithCliVersion": "0.14.0-0",
+  "lastHeartbeat": "2026-03-04T10:35:00.000Z",
+  "daemonLogPath": "/home/user/.happy/logs/2026-03-04-10-30-00-daemon.log"
+}
+```
+
+## Sandbox Configuration
+
+Configure OS-level sandboxing for Happy sessions. See the full [sandbox configuration guide](/cli/sandbox).
+
+<AccordionGroup>
+  <Accordion title="Session Isolation Modes">
+    - **strict**: Only session directory and shared agent state
+    - **workspace**: Full workspace root directory access
+    - **custom**: Custom write paths defined by user
+  </Accordion>
+
+  <Accordion title="Network Modes">
+    - **blocked**: Block all network access (most secure)
+    - **allowed**: Allow all network access (default)
+    - **custom**: Custom allow/deny lists for domains
+  </Accordion>
+</AccordionGroup>
+
+## Managing Settings
+
+### View Current Settings
+
+Settings are stored as JSON and can be viewed directly:
+
+```bash
+cat ~/.happy/settings.json | jq
+```
+
+### Update Settings
+
+Settings are automatically updated through Happy CLI commands. Manual editing is supported but not recommended.
+
+<Warning>
+  Always backup `settings.json` before manual editing.
+</Warning>
+
+### Reset Settings
+
+To reset all settings to defaults:
+
+```bash
+# Stop daemon first
+happy daemon stop
+
+# Remove settings file
+rm ~/.happy/settings.json
+
+# Restart Happy (will create new settings)
+happy
+```
+
+## Profile Management
+
+AI backend profiles allow you to configure different environments for Claude, Codex, and Gemini.
+
+### Profile Schema
+
+Each profile contains:
+
+- **Basic info**: `id`, `name`, `description`
+- **AI configs**: `anthropicConfig`, `openaiConfig`, `azureOpenAIConfig`, `togetherAIConfig`
+- **Tmux config**: Terminal multiplexer settings
+- **Environment variables**: Custom variables for the profile
+- **Defaults**: Session type, permission mode, model mode
+- **Compatibility**: Which agents can use this profile
+
+### Profile Environment Variables
+
+Profiles can define environment variables that are automatically set when running sessions:
+
+```json
+{
+  "environmentVariables": [
+    {
+      "name": "ANTHROPIC_BASE_URL",
+      "value": "https://custom-api.example.com"
+    },
+    {
+      "name": "CUSTOM_VAR",
+      "value": "custom-value"
+    }
+  ]
+}
+```
+
+## Logs Directory
+
+All Happy daemon logs are stored in `~/.happy/logs/` with timestamps:
+
+```
+~/.happy/logs/
+├── 2026-03-04-10-30-00-daemon.log
+├── 2026-03-04-11-45-00-daemon.log
+└── 2026-03-04-14-20-00-daemon.log
+```
+
+### View Daemon Logs
+
+```bash
+# Get path to latest log file
+happy daemon logs
+
+# Tail the latest log
+tail -f $(happy daemon logs)
+```
+
+## Version Migration
+
+Happy CLI automatically migrates settings between schema versions:
+
+- **v1 → v2**: Added profile support and local environment variables
+- Invalid profiles are skipped with warnings (doesn't crash)
+- Always backwards compatible
+
+<Info>
+  If Happy detects a newer schema version than supported, it will show a warning but continue to work with available data.
+</Info>

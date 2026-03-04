@@ -1,0 +1,400 @@
+---
+title: "Environment Variables"
+description: "Configure Happy CLI behavior using environment variables"
+icon: "code"
+---
+
+Happy CLI can be configured using environment variables to customize its behavior for different environments and use cases.
+
+## Core Configuration
+
+### HAPPY_SERVER_URL
+
+URL of the Happy server to connect to.
+
+<ParamField path="HAPPY_SERVER_URL" type="string" default="https://api.cluster-fluster.com">
+  The base URL for the Happy API server.
+</ParamField>
+
+**Example:**
+
+```bash
+# Use local development server
+export HAPPY_SERVER_URL=http://localhost:3005
+happy
+```
+
+### HAPPY_WEBAPP_URL
+
+URL of the Happy web application.
+
+<ParamField path="HAPPY_WEBAPP_URL" type="string" default="https://app.happy.engineering">
+  The URL for the Happy web application interface.
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_WEBAPP_URL=http://localhost:3000
+```
+
+### HAPPY_HOME_DIR
+
+Custom location for Happy configuration and data files.
+
+<ParamField path="HAPPY_HOME_DIR" type="string" default="~/.happy">
+  Directory path where Happy stores settings, keys, and logs. Supports `~` for home directory.
+</ParamField>
+
+**Example:**
+
+```bash
+# Use separate directory for development
+export HAPPY_HOME_DIR=~/.happy-dev
+happy
+```
+
+<Info>
+  When using `HAPPY_VARIANT=dev`, ensure `HAPPY_HOME_DIR` contains "dev" to avoid confusion.
+</Info>
+
+## Feature Flags
+
+### HAPPY_EXPERIMENTAL
+
+Enable experimental features in Happy CLI.
+
+<ParamField path="HAPPY_EXPERIMENTAL" type="string" default="false">
+  Accepts: `true`, `1`, `yes` (case-insensitive)
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_EXPERIMENTAL=true
+happy
+```
+
+### HAPPY_DISABLE_CAFFEINATE
+
+Disable the caffeinate feature (macOS) that keeps the system awake during sessions.
+
+<ParamField path="HAPPY_DISABLE_CAFFEINATE" type="string" default="false">
+  Accepts: `true`, `1`, `yes` (case-insensitive)
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_DISABLE_CAFFEINATE=true
+happy
+```
+
+### HAPPY_VARIANT
+
+Specify the Happy variant (stable or dev).
+
+<ParamField path="HAPPY_VARIANT" type="string" default="stable">
+  Accepts: `stable` or `dev`
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_VARIANT=dev
+export HAPPY_HOME_DIR=~/.happy-dev
+happy
+```
+
+<Warning>
+  When using `dev` variant, Happy expects `HAPPY_HOME_DIR` to contain "dev" in the path and will show a warning if it doesn't.
+</Warning>
+
+## Daemon Configuration
+
+### HAPPY_DAEMON_HTTP_TIMEOUT
+
+Timeout for daemon HTTP requests in milliseconds.
+
+<ParamField path="HAPPY_DAEMON_HTTP_TIMEOUT" type="number" default="10000">
+  HTTP request timeout in milliseconds (10 seconds default).
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_DAEMON_HTTP_TIMEOUT=30000
+happy daemon start
+```
+
+### HAPPY_DAEMON_HEARTBEAT_INTERVAL
+
+Interval between daemon heartbeat checks in milliseconds.
+
+<ParamField path="HAPPY_DAEMON_HEARTBEAT_INTERVAL" type="number" default="60000">
+  Heartbeat interval in milliseconds (60 seconds default).
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_DAEMON_HEARTBEAT_INTERVAL=30000
+happy daemon start
+```
+
+## Claude Configuration
+
+### HAPPY_CLAUDE_PATH
+
+Custom path to the Claude CLI executable.
+
+<ParamField path="HAPPY_CLAUDE_PATH" type="string">
+  Absolute path to the `claude` binary. Useful for testing custom Claude builds.
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_CLAUDE_PATH=/usr/local/bin/claude-dev
+happy
+```
+
+### HAPPY_USE_BUNDLED_CLAUDE
+
+Force Happy to use its bundled Claude version.
+
+<ParamField path="HAPPY_USE_BUNDLED_CLAUDE" type="string" default="0">
+  Set to `1` to use the Claude version bundled with Happy.
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_USE_BUNDLED_CLAUDE=1
+happy
+```
+
+### CLAUDE_CONFIG_DIR
+
+Custom location for Claude configuration files.
+
+<ParamField path="CLAUDE_CONFIG_DIR" type="string" default="~/.claude">
+  Directory where Claude stores its configuration and project data.
+</ParamField>
+
+**Example:**
+
+```bash
+export CLAUDE_CONFIG_DIR=~/.claude-dev
+happy
+```
+
+### CLAUDE_CODE_ENTRYPOINT
+
+Specify the Claude Code entrypoint.
+
+<ParamField path="CLAUDE_CODE_ENTRYPOINT" type="string" default="sdk-ts">
+  Entrypoint identifier for Claude Code SDK.
+</ParamField>
+
+### CLAUDE_SDK_MCP_SERVERS
+
+Configure MCP servers for Claude SDK.
+
+<ParamField path="CLAUDE_SDK_MCP_SERVERS" type="string">
+  MCP server configuration (automatically managed by Happy).
+</ParamField>
+
+## Codex Configuration
+
+### CODEX_HOME
+
+Custom location for Codex configuration files.
+
+<ParamField path="CODEX_HOME" type="string" default="~/.codex">
+  Directory where Codex stores its state and configuration.
+</ParamField>
+
+**Example:**
+
+```bash
+export CODEX_HOME=~/.codex-dev
+happy codex
+```
+
+### HAPPY_HTTP_MCP_URL
+
+Base URL for HTTP-based MCP bridge.
+
+<ParamField path="HAPPY_HTTP_MCP_URL" type="string">
+  URL for the Happy MCP HTTP bridge.
+</ParamField>
+
+**Example:**
+
+```bash
+export HAPPY_HTTP_MCP_URL=http://localhost:8080
+happy codex
+```
+
+## Gemini Configuration
+
+### GEMINI_API_KEY
+
+API key for Gemini access.
+
+<ParamField path="GEMINI_API_KEY" type="string">
+  Your Gemini API key for authentication.
+</ParamField>
+
+**Example:**
+
+```bash
+export GEMINI_API_KEY=your-api-key-here
+happy gemini
+```
+
+### GEMINI_MODEL
+
+Default Gemini model to use.
+
+<ParamField path="GEMINI_MODEL" type="string" default="gemini-2.5-pro">
+  Model identifier. Available: `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`
+</ParamField>
+
+**Example:**
+
+```bash
+export GEMINI_MODEL=gemini-2.5-flash
+happy gemini
+```
+
+### GOOGLE_CLOUD_PROJECT
+
+Google Cloud Project ID for Workspace accounts.
+
+<ParamField path="GOOGLE_CLOUD_PROJECT" type="string">
+  Required for Google Workspace accounts using Gemini.
+</ParamField>
+
+**Example:**
+
+```bash
+export GOOGLE_CLOUD_PROJECT=my-project-id
+happy gemini
+```
+
+## AI Provider Configuration
+
+These environment variables can be used to configure AI provider settings. They can also be set via [AI Backend Profiles](/cli/settings#profile-management).
+
+### Anthropic
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `ANTHROPIC_BASE_URL` | Custom API endpoint | `https://api.anthropic.com` |
+| `ANTHROPIC_AUTH_TOKEN` | API authentication token | - |
+| `ANTHROPIC_MODEL` | Default model to use | - |
+
+### OpenAI
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | OpenAI API key | - |
+| `OPENAI_BASE_URL` | Custom API endpoint | `https://api.openai.com` |
+| `OPENAI_MODEL` | Default model to use | - |
+
+### Azure OpenAI
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key | - |
+| `AZURE_OPENAI_ENDPOINT` | Azure endpoint URL | - |
+| `AZURE_OPENAI_API_VERSION` | API version | - |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | Deployment name | - |
+
+### Together AI
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `TOGETHER_API_KEY` | Together AI API key | - |
+| `TOGETHER_MODEL` | Model to use | - |
+
+## Tmux Configuration
+
+| Variable | Description | Default |
+|----------|-------------|----------|
+| `TMUX_SESSION_NAME` | Target tmux session name | Current/most recent |
+| `TMUX_TMPDIR` | Tmux temporary directory | System default |
+| `TMUX_UPDATE_ENVIRONMENT` | Update environment in tmux | - |
+
+## Debug and Development
+
+### DEBUG
+
+Enable debug logging and verbose output.
+
+<ParamField path="DEBUG" type="string">
+  When set (any value), enables debug mode with verbose logging.
+</ParamField>
+
+**Example:**
+
+```bash
+export DEBUG=1
+happy
+```
+
+<Warning>
+  Debug mode produces verbose logs. Use only for troubleshooting.
+</Warning>
+
+### HAPPY_PROJECT_ROOT
+
+Project root directory (used in development).
+
+<ParamField path="HAPPY_PROJECT_ROOT" type="string">
+  Root directory of the Happy project for development purposes.
+</ParamField>
+
+### HAPPY_RUN_SANDBOX_NETWORK_TESTS
+
+Enable sandbox network integration tests.
+
+<ParamField path="HAPPY_RUN_SANDBOX_NETWORK_TESTS" type="string" default="0">
+  Set to `1` to run network integration tests for sandboxing.
+</ParamField>
+
+## Using Environment Files
+
+You can use `.env` files with Node's `--env-file` flag:
+
+```bash
+# Create .env file
+cat > .env << EOF
+HAPPY_SERVER_URL=http://localhost:3005
+HAPPY_HOME_DIR=~/.happy-dev
+HAPPY_VARIANT=dev
+DEBUG=1
+EOF
+
+# Run with environment file
+node --env-file .env $(which happy)
+```
+
+## Environment Variables Summary
+
+<CardGroup cols={2}>
+  <Card title="Core" icon="gear">
+    `HAPPY_SERVER_URL`, `HAPPY_WEBAPP_URL`, `HAPPY_HOME_DIR`, `HAPPY_VARIANT`
+  </Card>
+  <Card title="Features" icon="flag">
+    `HAPPY_EXPERIMENTAL`, `HAPPY_DISABLE_CAFFEINATE`
+  </Card>
+  <Card title="Claude" icon="asterisk">
+    `HAPPY_CLAUDE_PATH`, `CLAUDE_CONFIG_DIR`, `ANTHROPIC_BASE_URL`
+  </Card>
+  <Card title="Daemon" icon="server">
+    `HAPPY_DAEMON_HTTP_TIMEOUT`, `HAPPY_DAEMON_HEARTBEAT_INTERVAL`
+  </Card>
+</CardGroup>

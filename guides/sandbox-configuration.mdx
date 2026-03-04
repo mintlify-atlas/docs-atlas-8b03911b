@@ -1,0 +1,599 @@
+---
+title: Sandbox Configuration
+description: Configure OS-level sandboxing to secure your AI sessions and control file system and network access
+---
+
+# Sandbox Configuration
+
+Happy supports OS-level sandboxing to restrict what Claude Code can access on your system. This adds an extra security layer by limiting file system access, network access, and other system resources.
+
+<Note>
+  Sandboxing is powered by `@anthropic-ai/sandbox-runtime` and provides process-level isolation using OS security features.
+</Note>
+
+## Quick Start
+
+Configure sandboxing interactively:
+
+```bash
+happy sandbox configure
+```
+
+You'll be prompted to choose:
+
+1. **File access scope** - workspace-wide or per-project
+2. **Workspace root** - directory containing all your projects
+3. **Network mode** - allowed, blocked, or custom
+4. **Localhost binding** - allow binding to localhost ports (for dev servers)
+
+Example session:
+
+```
+How should file access be scoped?
+❯ workspace - Full workspace root directory
+  per-project - Only current project directory
+
+Pick your workspace root directory
+❯ ~/Developer
+  ~/Workspace (suggested)
+
+How should network access be handled?
+❯ allowed - Allow all network access (default)
+  blocked - Block all network access (most secure)
+
+Allow binding to localhost ports? (for dev servers) Yes
+```
+
+## Sandbox Commands
+
+### Configure
+
+Run the interactive configuration wizard:
+
+```bash
+happy sandbox configure
+```
+
+Generates a configuration saved to `~/.happy/settings.json`.
+
+### Status
+
+View current sandbox configuration:
+
+```bash
+happy sandbox status
+```
+
+Example output:
+
+```
+Sandbox status
+Enabled: yes
+Scope: workspace
+Workspace root: ~/Developer
+Network mode: allowed
+Allow localhost binding: yes
+```
+
+### Disable
+
+Disable sandboxing without removing configuration:
+
+```bash
+happy sandbox disable
+```
+
+You can re-enable by editing settings or running `happy sandbox configure` again.
+
+## Sandbox Modes
+
+### File Access Scopes
+
+Control which directories Claude can read and write:
+
+<Accordion title="Workspace Mode">
+  **Best for**: Developers with a dedicated workspace directory
+  
+  **Access**:
+  - Full read/write to workspace root and subdirectories
+  - Read/write to current project directory
+  - Shared agent state (`~/.claude/`, `~/.codex/`)
+  - Extra write paths (e.g., `/tmp`)
+  
+  **Example**:
+  ```bash
+  # Workspace root: ~/Developer
+  # Can access: ~/Developer/project1, ~/Developer/project2, etc.
+  cd ~/Developer/myapp
+  happy
+  ```
+  
+  **Configuration**:
+  ```json
+  {
+    "sessionIsolation": "workspace",
+    "workspaceRoot": "~/Developer"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Per-Project Mode (Strict)">
+  **Best for**: Maximum isolation, separate projects
+  
+  **Access**:
+  - Only current project directory (read/write)
+  - Shared agent state (`~/.claude/`, `~/.codex/`)
+  - Extra write paths (e.g., `/tmp`)
+  
+  **Example**:
+  ```bash
+  # Can only access /Users/john/projects/myapp
+  cd ~/projects/myapp
+  happy
+  ```
+  
+  **Configuration**:
+  ```json
+  {
+    "sessionIsolation": "strict"
+  }
+  ```
+</Accordion>
+
+<Accordion title="Custom Mode">
+  **Best for**: Advanced users with specific requirements
+  
+  **Access**:
+  - Manually specified directories (read/write)
+  - Shared agent state
+  - Extra write paths
+  
+  **Configuration**:
+  ```json
+  {
+    "sessionIsolation": "custom",
+    "customWritePaths": [
+      "~/projects",
+      "~/Documents/work"
+    ]
+  }
+  ```
+</Accordion>
+
+### Network Modes
+
+Control network access from Claude:
+
+<Accordion title="Allowed (Default)">
+  **Best for**: General development work
+  
+  **Access**:
+  - All outbound network connections allowed
+  - Can download dependencies, API calls, etc.
+  - Localhost binding enabled (configurable)
+  
+  **Configuration**:
+  ```json
+  {
+    "networkMode": "allowed",
+    "allowLocalBinding": true
+  }
+  ```
+</Accordion>
+
+<Accordion title="Blocked">
+  **Best for**: Maximum security, offline work
+  
+  **Access**:
+  - All network connections blocked
+  - No outbound requests
+  - Localhost binding configurable
+  
+  **Configuration**:
+  ```json
+  {
+    "networkMode": "blocked",
+    "allowLocalBinding": false
+  }
+  ```
+</Accordion>
+
+<Accordion title="Custom">
+  **Best for**: Selective network access
+  
+  **Access**:
+  - Allowlist specific domains
+  - Denylist specific domains
+  - Localhost binding configurable
+  
+  **Configuration**:
+  ```json
+  {
+    "networkMode": "custom",
+    "allowedDomains": ["api.github.com", "*.npmjs.org"],
+    "deniedDomains": ["malicious-site.com"],
+    "allowLocalBinding": true
+  }
+  ```
+</Accordion>
+
+## Configuration Schema
+
+Full sandbox configuration structure:
+
+```typescript
+interface SandboxConfig {
+  enabled: boolean;
+  
+  // File access
+  sessionIsolation: 'workspace' | 'strict' | 'custom';
+  workspaceRoot?: string;           // For workspace mode
+  customWritePaths: string[];       // For custom mode
+  extraWritePaths: string[];        // Additional allowed paths
+  denyReadPaths: string[];          // Paths to deny reading
+  denyWritePaths: string[];         // Paths to deny writing
+  
+  // Network access
+  networkMode: 'allowed' | 'blocked' | 'custom';
+  allowedDomains: string[];         // For custom mode
+  deniedDomains: string[];          // For custom mode
+  allowLocalBinding: boolean;       // Allow binding to localhost
+}
+```
+
+### Default Configuration
+
+When you run `happy sandbox configure`, defaults are:
+
+```json
+{
+  "enabled": true,
+  "sessionIsolation": "workspace",
+  "workspaceRoot": "~/Developer",
+  "customWritePaths": [],
+  "denyReadPaths": [
+    "~/.ssh",
+    "~/.aws",
+    "~/.gnupg"
+  ],
+  "extraWritePaths": ["/tmp"],
+  "denyWritePaths": [".env"],
+  "networkMode": "allowed",
+  "allowedDomains": [],
+  "deniedDomains": [],
+  "allowLocalBinding": true
+}
+```
+
+## Path Resolution
+
+Sandbox paths are resolved at runtime:
+
+### Tilde Expansion
+
+`~` expands to user's home directory:
+
+```json
+"workspaceRoot": "~/Developer"
+// Becomes: /Users/john/Developer
+```
+
+### Relative Paths
+
+Relative paths resolve from session's project directory:
+
+```json
+"extraWritePaths": ["build", "dist"]
+// In /Users/john/projects/myapp, becomes:
+// /Users/john/projects/myapp/build
+// /Users/john/projects/myapp/dist
+```
+
+### Absolute Paths
+
+Absolute paths used as-is:
+
+```json
+"customWritePaths": ["/var/tmp/builds"]
+// Used exactly as specified
+```
+
+## Protected Paths
+
+### Always Readable
+
+These paths are always accessible for reading:
+
+- Shared agent state: `~/.claude/`, `~/.codex/`
+- System libraries and binaries
+- Node.js installation
+- Project directory
+
+### Recommended Deny Paths
+
+Protect sensitive data by adding to `denyReadPaths`:
+
+```json
+{
+  "denyReadPaths": [
+    "~/.ssh",        // SSH keys
+    "~/.aws",        // AWS credentials
+    "~/.gnupg",      // GPG keys
+    "~/.kube",       // Kubernetes config
+    "~/.docker"      // Docker credentials
+  ]
+}
+```
+
+### Recommended Deny Write Paths
+
+Prevent accidental modification:
+
+```json
+{
+  "denyWritePaths": [
+    ".env",           // Environment variables
+    ".env.local",
+    "*.key",          // Private keys
+    "*.pem"
+  ]
+}
+```
+
+## Runtime Configuration
+
+The sandbox configuration is converted to `@anthropic-ai/sandbox-runtime` format at runtime:
+
+```typescript
+interface SandboxRuntimeConfig {
+  allowPty: boolean;  // Always true
+  enableWeakerNetworkIsolation?: boolean;
+  network: {
+    allowedDomains?: string[];
+    deniedDomains: string[];
+    allowLocalBinding: boolean;
+    allowUnixSockets: string[];
+  };
+  filesystem: {
+    denyRead: string[];
+    allowWrite: string[];
+    denyWrite: string[];
+  };
+}
+```
+
+Built by `buildSandboxRuntimeConfig()` in `src/sandbox/config.ts`.
+
+## Bypassing Sandbox
+
+Temporarily disable sandbox for a single session:
+
+```bash
+happy --no-sandbox
+```
+
+<Warning>
+  Use `--no-sandbox` with caution. Claude will have unrestricted access to your file system and network.
+</Warning>
+
+### When to Bypass
+
+- Testing sandbox configuration
+- Troubleshooting permission issues
+- One-off tasks requiring broad access
+- Development in non-standard directories
+
+## Workspace Detection
+
+Happy automatically detects common workspace directories:
+
+**macOS**:
+1. `~/Developer`
+2. `~/Develop`
+3. `~/Workspace`
+
+**Linux**:
+1. `~/Workspace`
+2. `~/Developer`
+3. `~/Develop`
+
+**Selection logic**:
+- First existing directory is suggested
+- If none exist, falls back to first option
+- You can manually specify any directory
+
+## Examples
+
+### Example 1: Secure Web Development
+
+```json
+{
+  "enabled": true,
+  "sessionIsolation": "workspace",
+  "workspaceRoot": "~/projects",
+  "denyReadPaths": [
+    "~/.ssh",
+    "~/.aws",
+    "~/.config"
+  ],
+  "denyWritePaths": [
+    ".env",
+    ".env.local",
+    "*.pem"
+  ],
+  "networkMode": "allowed",
+  "allowLocalBinding": true
+}
+```
+
+Use case: Allow Claude to work on web projects, run dev servers, but protect credentials.
+
+### Example 2: Offline Development
+
+```json
+{
+  "enabled": true,
+  "sessionIsolation": "strict",
+  "networkMode": "blocked",
+  "allowLocalBinding": true,
+  "extraWritePaths": ["/tmp", "~/Documents/exports"]
+}
+```
+
+Use case: Work on sensitive projects with no internet access, only localhost dev servers.
+
+### Example 3: Restricted Network Access
+
+```json
+{
+  "enabled": true,
+  "sessionIsolation": "workspace",
+  "workspaceRoot": "~/company-projects",
+  "networkMode": "custom",
+  "allowedDomains": [
+    "api.company.com",
+    "*.internal.corp",
+    "github.com"
+  ],
+  "deniedDomains": [
+    "*.public-api.com"
+  ],
+  "allowLocalBinding": true
+}
+```
+
+Use case: Corporate environment with strict network policies.
+
+### Example 4: Multi-Workspace Setup
+
+```json
+{
+  "enabled": true,
+  "sessionIsolation": "custom",
+  "customWritePaths": [
+    "~/work/projects",
+    "~/personal/projects",
+    "~/experiments"
+  ],
+  "networkMode": "allowed",
+  "allowLocalBinding": true
+}
+```
+
+Use case: Multiple separate workspace directories.
+
+## Troubleshooting
+
+### Permission Denied Errors
+
+If Claude reports permission errors:
+
+1. Check current configuration:
+   ```bash
+   happy sandbox status
+   ```
+
+2. Verify paths are in allowed list:
+   ```bash
+   cat ~/.happy/settings.json | jq '.sandboxConfig'
+   ```
+
+3. Temporarily disable to test:
+   ```bash
+   happy --no-sandbox
+   ```
+
+4. Reconfigure if needed:
+   ```bash
+   happy sandbox configure
+   ```
+
+### Network Connection Failures
+
+If Claude can't access network:
+
+1. Check network mode:
+   ```bash
+   happy sandbox status
+   ```
+
+2. Verify domain is allowed (custom mode):
+   ```json
+   {
+     "networkMode": "custom",
+     "allowedDomains": ["api.example.com"]
+   }
+   ```
+
+3. Temporarily allow all:
+   ```bash
+   happy --no-sandbox
+   ```
+
+### Localhost Binding Issues
+
+If dev servers won't start:
+
+1. Check `allowLocalBinding` is enabled:
+   ```bash
+   happy sandbox status
+   ```
+
+2. Reconfigure to allow:
+   ```bash
+   happy sandbox configure
+   # Answer "yes" to localhost binding
+   ```
+
+### Configuration Not Applied
+
+If changes aren't taking effect:
+
+1. Verify settings file:
+   ```bash
+   cat ~/.happy/settings.json
+   ```
+
+2. Restart session:
+   ```bash
+   # Exit current session, start new one
+   happy
+   ```
+
+3. Check for override flags:
+   ```bash
+   # --no-sandbox bypasses configuration
+   ```
+
+## Security Best Practices
+
+<Steps>
+  <Step title="Start with strict mode">
+    Begin with per-project isolation and tighten as needed.
+  </Step>
+  
+  <Step title="Deny sensitive paths">
+    Always deny read access to `~/.ssh`, `~/.aws`, `~/.gnupg`, etc.
+  </Step>
+  
+  <Step title="Protect credentials">
+    Add `.env`, `*.key`, `*.pem` to `denyWritePaths`.
+  </Step>
+  
+  <Step title="Review network needs">
+    Use `allowed` for general work, `custom` for restricted environments.
+  </Step>
+  
+  <Step title="Regular audits">
+    Periodically review your configuration:
+    ```bash
+    happy sandbox status
+    ```
+  </Step>
+</Steps>
+
+## Related Commands
+
+- [`happy --no-sandbox`](/cli-reference/flags) - Bypass sandbox for one session
+- [`happy doctor`](/guides/troubleshooting) - Diagnose sandbox issues
+- [`happy daemon`](/guides/daemon-management) - Daemon respects sandbox config
