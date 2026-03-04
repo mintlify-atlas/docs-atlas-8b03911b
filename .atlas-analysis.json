@@ -1,0 +1,132 @@
+{
+  "projectType": "saas",
+  "projectName": "Happy",
+  "projectDescription": "Mobile and web client for Claude Code and Codex with realtime voice, encryption, and full-featured remote control.",
+  "theme": "almond",
+  "primaryColor": "#f18b3b",
+  "lightColor": "#20b7c1",
+  "darkColor": "#393c5b",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/mobile-access",
+              "features/push-notifications",
+              "features/device-switching",
+              "features/encryption",
+              "features/voice-control"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/authentication",
+              "guides/daemon-management",
+              "guides/session-management",
+              "guides/sandbox-configuration",
+              "guides/troubleshooting"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/cli",
+              "components/mobile-app",
+              "components/web-app",
+              "components/server",
+              "components/agent"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/happy",
+              "cli/codex",
+              "cli/gemini",
+              "cli/acp",
+              "cli/auth",
+              "cli/daemon",
+              "cli/connect",
+              "cli/sandbox",
+              "cli/notify",
+              "cli/doctor"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "cli/settings",
+              "cli/environment-variables",
+              "cli/flags"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/architecture",
+              "development/data-flow",
+              "development/encryption-layer",
+              "development/session-lifecycle"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/setup",
+              "development/project-structure",
+              "development/building",
+              "development/testing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Mobile access to Claude Code and Codex from iOS and Android",
+    "Push notifications for AI agent permission requests and errors",
+    "Instant device switching between phone and desktop",
+    "End-to-end encryption for code and conversations",
+    "Real-time voice communication with AI agents",
+    "Background daemon for remote session spawning",
+    "Support for multiple AI agents (Claude, Codex, Gemini)",
+    "Open source with no telemetry or tracking"
+  ],
+  "publicApiSurface": [
+    "happy - Start Claude Code with mobile control",
+    "happy codex - Start Codex mode",
+    "happy gemini - Start Gemini mode",
+    "happy acp - Start ACP-compatible agents",
+    "happy auth - Authentication management",
+    "happy daemon - Background service control",
+    "happy connect - AI vendor API key management",
+    "happy sandbox - OS-level sandboxing configuration",
+    "happy notify - Send push notifications",
+    "happy doctor - System diagnostics",
+    "Mobile app (iOS/Android) - Native mobile clients",
+    "Web app - Browser-based interface",
+    "Server API - Backend for encrypted sync"
+  ]
+}
